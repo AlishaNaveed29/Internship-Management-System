@@ -12,6 +12,7 @@ import {
   TableContainer,
   Avatar,
   IconButton,
+  Pagination,
 } from "@mui/material";
 import { Visibility, Assignment } from "@mui/icons-material";
 import StudentLayout from "../../layouts/StudentLayout";
@@ -28,11 +29,14 @@ const statusColors = {
 function MyApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (p = 1) => {
     try {
-      const res = await API.get("/applications/my");
+      const res = await API.get(`/applications/my?page=${p}&limit=10`);
       setApplications(res.data.applications || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -41,8 +45,8 @@ function MyApplications() {
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, []);
+    fetchApplications(page);
+  }, [page]);
 
   if (loading) return <StudentLayout><Loader /></StudentLayout>;
 
@@ -55,7 +59,7 @@ function MyApplications() {
         </Box>
         <Chip
           icon={<Assignment />}
-          label={`${applications.length} Total`}
+          label={`${totalPages > 0 ? `${(page - 1) * 10 + 1}-${Math.min(page * 10, totalPages * 10)}` : "0"} Total`}
           sx={{ bgcolor: "rgba(99,102,241,0.1)", color: "#6366F1", fontWeight: 600 }}
         />
       </Box>
@@ -130,6 +134,11 @@ function MyApplications() {
               </TableBody>
             </Table>
           </TableContainer>
+          {totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+            </Box>
+          )}
         </Paper>
       )}
     </StudentLayout>

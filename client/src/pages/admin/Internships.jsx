@@ -13,6 +13,7 @@ import {
   Avatar,
   TextField,
   InputAdornment,
+  Pagination,
 } from "@mui/material";
 import { Search, Work } from "@mui/icons-material";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -23,11 +24,14 @@ function AdminInternships() {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchInternships = async () => {
+  const fetchInternships = async (p = 1) => {
     try {
-      const res = await API.get("/admin/internships");
+      const res = await API.get(`/admin/internships?page=${p}&limit=10`);
       setInternships(res.data.internships || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -36,8 +40,8 @@ function AdminInternships() {
   };
 
   useEffect(() => {
-    fetchInternships();
-  }, []);
+    fetchInternships(page);
+  }, [page]);
 
   const filtered = internships.filter((i) =>
     i.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -53,11 +57,11 @@ function AdminInternships() {
           <Typography variant="h4" fontWeight={800}>Internships</Typography>
           <Typography variant="body2" color="text.secondary">View all internships on the platform</Typography>
         </Box>
-        <TextField
-          size="small"
-          placeholder="Search internships..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          <TextField
+            size="small"
+            placeholder="Search internships..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           InputProps={{
             startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
           }}
@@ -128,6 +132,11 @@ function AdminInternships() {
               </TableBody>
             </Table>
           </TableContainer>
+          {totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+            </Box>
+          )}
         </Paper>
       )}
     </AdminLayout>

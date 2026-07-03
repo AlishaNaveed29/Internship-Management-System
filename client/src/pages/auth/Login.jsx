@@ -15,24 +15,31 @@ import { Visibility, VisibilityOff, Email, Lock, Work } from "@mui/icons-materia
 import { toast } from "react-toastify";
 import API from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { validators, validate } from "../../utils/validation";
 
 function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({ email: "", password: "" });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
+  };
+
+  const validationRules = {
+    email: [validators.required, validators.email],
+    password: [validators.required, validators.password],
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
+    const errs = validate(validationRules, form);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setLoading(true);
     try {
       const res = await API.post("/auth/login", form);
@@ -90,6 +97,8 @@ function Login() {
               value={form.email}
               onChange={handleChange}
               margin="normal"
+              error={!!errors.email}
+              helperText={errors.email}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -106,6 +115,8 @@ function Login() {
               value={form.password}
               onChange={handleChange}
               margin="normal"
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

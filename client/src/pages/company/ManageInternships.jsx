@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Pagination,
 } from "@mui/material";
 import { Add, Edit, Delete, Visibility, Work } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -30,11 +31,14 @@ function ManageInternships() {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadInternships = async () => {
+  const loadInternships = async (p = 1) => {
     try {
-      const res = await API.get("/internships/my");
+      const res = await API.get(`/internships/my?page=${p}&limit=10`);
       setInternships(res.data.internships || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -43,8 +47,8 @@ function ManageInternships() {
   };
 
   useEffect(() => {
-    loadInternships();
-  }, []);
+    loadInternships(page);
+  }, [page]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -139,6 +143,11 @@ function ManageInternships() {
               </TableBody>
             </Table>
           </TableContainer>
+          {totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+            </Box>
+          )}
         </Paper>
       )}
 

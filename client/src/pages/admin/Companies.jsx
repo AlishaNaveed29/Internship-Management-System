@@ -13,6 +13,7 @@ import {
   Avatar,
   TextField,
   InputAdornment,
+  Pagination,
 } from "@mui/material";
 import { Search, Business } from "@mui/icons-material";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -23,11 +24,14 @@ function Companies() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = async (p = 1) => {
     try {
-      const res = await API.get("/admin/companies");
+      const res = await API.get(`/admin/companies?page=${p}&limit=10`);
       setCompanies(res.data.companies || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -36,8 +40,8 @@ function Companies() {
   };
 
   useEffect(() => {
-    fetchCompanies();
-  }, []);
+    fetchCompanies(page);
+  }, [page]);
 
   const filtered = companies.filter((c) =>
     c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -53,11 +57,11 @@ function Companies() {
           <Typography variant="h4" fontWeight={800}>Companies</Typography>
           <Typography variant="body2" color="text.secondary">Manage registered companies</Typography>
         </Box>
-        <TextField
-          size="small"
-          placeholder="Search companies..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          <TextField
+            size="small"
+            placeholder="Search companies..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           InputProps={{
             startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
           }}
@@ -111,6 +115,11 @@ function Companies() {
               </TableBody>
             </Table>
           </TableContainer>
+          {totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+            </Box>
+          )}
         </Paper>
       )}
     </AdminLayout>

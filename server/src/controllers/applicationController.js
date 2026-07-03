@@ -42,11 +42,20 @@ export const myApplications = async (req, res) => {
       return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
-    const applications = await Application.find({ student: student._id })
-      .populate(internshipPopulate)
-      .sort({ createdAt: -1 });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
 
-    res.status(200).json({ success: true, applications });
+    const [applications, total] = await Promise.all([
+      Application.find({ student: student._id })
+        .populate(internshipPopulate)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Application.countDocuments({ student: student._id }),
+    ]);
+
+    res.status(200).json({ success: true, applications, total, page, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -62,12 +71,21 @@ export const getCompanyApplications = async (req, res) => {
     const companyInternships = await Internship.find({ company: company._id }).select("_id");
     const ids = companyInternships.map((i) => i._id);
 
-    const applications = await Application.find({ internship: { $in: ids } })
-      .populate(studentPopulate)
-      .populate(internshipPopulate)
-      .sort({ createdAt: -1 });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
 
-    res.status(200).json({ success: true, applications });
+    const [applications, total] = await Promise.all([
+      Application.find({ internship: { $in: ids } })
+        .populate(studentPopulate)
+        .populate(internshipPopulate)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Application.countDocuments({ internship: { $in: ids } }),
+    ]);
+
+    res.status(200).json({ success: true, applications, total, page, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

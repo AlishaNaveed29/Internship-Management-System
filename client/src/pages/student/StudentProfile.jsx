@@ -14,11 +14,13 @@ import { toast } from "react-toastify";
 import StudentLayout from "../../layouts/StudentLayout";
 import API from "../../services/api";
 import Loader from "../../components/common/Loader";
+import { validators, validate } from "../../utils/validation";
 
 function StudentProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({});
 
   const fetchProfile = async () => {
@@ -48,15 +50,31 @@ function StudentProfile() {
     fetchProfile();
   }, []);
 
+  const profileValidation = {
+    fullName: [validators.required],
+    email: [validators.required, validators.email],
+    phone: [validators.phone],
+    graduationYear: [validators.year],
+  };
+
   const handleSave = async () => {
+    const errs = validate(profileValidation, form);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     try {
       const res = await API.put("/students/profile", form);
       setProfile(res.data.student);
       setEditing(false);
+      setErrors({});
       toast.success("Profile updated successfully");
     } catch (err) {
       toast.error(err.response?.data?.message || "Update failed");
     }
+  };
+
+  const handleFieldChange = (field) => (e) => {
+    setForm({ ...form, [field]: e.target.value });
+    if (errors[field]) setErrors({ ...errors, [field]: null });
   };
 
   if (loading) return <StudentLayout><Loader /></StudentLayout>;
@@ -119,9 +137,11 @@ function StudentProfile() {
                   fullWidth
                   label="Full Name"
                   value={form.fullName || ""}
-                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  onChange={handleFieldChange("fullName")}
                   disabled={!editing}
                   size="small"
+                  error={!!errors.fullName}
+                  helperText={errors.fullName}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -129,9 +149,11 @@ function StudentProfile() {
                   fullWidth
                   label="Email"
                   value={form.email || ""}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={handleFieldChange("email")}
                   disabled={!editing}
                   size="small"
+                  error={!!errors.email}
+                  helperText={errors.email}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -139,7 +161,7 @@ function StudentProfile() {
                   fullWidth
                   label="University"
                   value={form.university || ""}
-                  onChange={(e) => setForm({ ...form, university: e.target.value })}
+                  onChange={handleFieldChange("university")}
                   disabled={!editing}
                   size="small"
                 />
@@ -149,7 +171,7 @@ function StudentProfile() {
                   fullWidth
                   label="Degree"
                   value={form.degree || ""}
-                  onChange={(e) => setForm({ ...form, degree: e.target.value })}
+                  onChange={handleFieldChange("degree")}
                   disabled={!editing}
                   size="small"
                 />
@@ -159,7 +181,7 @@ function StudentProfile() {
                   fullWidth
                   label="Major"
                   value={form.major || ""}
-                  onChange={(e) => setForm({ ...form, major: e.target.value })}
+                  onChange={handleFieldChange("major")}
                   disabled={!editing}
                   size="small"
                 />
@@ -169,9 +191,11 @@ function StudentProfile() {
                   fullWidth
                   label="Graduation Year"
                   value={form.graduationYear || ""}
-                  onChange={(e) => setForm({ ...form, graduationYear: e.target.value })}
+                  onChange={handleFieldChange("graduationYear")}
                   disabled={!editing}
                   size="small"
+                  error={!!errors.graduationYear}
+                  helperText={errors.graduationYear}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -179,9 +203,11 @@ function StudentProfile() {
                   fullWidth
                   label="Phone"
                   value={form.phone || ""}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={handleFieldChange("phone")}
                   disabled={!editing}
                   size="small"
+                  error={!!errors.phone}
+                  helperText={errors.phone}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -189,7 +215,7 @@ function StudentProfile() {
                   fullWidth
                   label="Location"
                   value={form.location || ""}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  onChange={handleFieldChange("location")}
                   disabled={!editing}
                   size="small"
                 />
@@ -199,7 +225,7 @@ function StudentProfile() {
                   fullWidth
                   label="Skills (comma separated)"
                   value={form.skills || ""}
-                  onChange={(e) => setForm({ ...form, skills: e.target.value })}
+                  onChange={handleFieldChange("skills")}
                   disabled={!editing}
                   size="small"
                   helperText="e.g. JavaScript, Python, React"
@@ -210,7 +236,7 @@ function StudentProfile() {
                   fullWidth
                   label="Bio"
                   value={form.bio || ""}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  onChange={handleFieldChange("bio")}
                   disabled={!editing}
                   multiline
                   rows={3}

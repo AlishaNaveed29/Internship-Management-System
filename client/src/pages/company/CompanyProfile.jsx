@@ -14,11 +14,13 @@ import { toast } from "react-toastify";
 import CompanyLayout from "../../layouts/CompanyLayout";
 import API from "../../services/api";
 import Loader from "../../components/common/Loader";
+import { validators, validate } from "../../utils/validation";
 
 function CompanyProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({});
 
   const fetchProfile = async () => {
@@ -46,15 +48,31 @@ function CompanyProfile() {
     fetchProfile();
   }, []);
 
+  const profileValidation = {
+    companyName: [validators.required],
+    email: [validators.required, validators.email],
+    website: [validators.url],
+    phone: [validators.phone],
+  };
+
   const handleSave = async () => {
+    const errs = validate(profileValidation, form);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     try {
       const res = await API.put("/companies/profile", form);
       setProfile(res.data.company);
       setEditing(false);
+      setErrors({});
       toast.success("Company profile updated");
     } catch (err) {
       toast.error(err.response?.data?.message || "Update failed");
     }
+  };
+
+  const handleFieldChange = (field) => (e) => {
+    setForm({ ...form, [field]: e.target.value });
+    if (errors[field]) setErrors({ ...errors, [field]: null });
   };
 
   if (loading) return <CompanyLayout><Loader /></CompanyLayout>;
@@ -107,42 +125,46 @@ function CompanyProfile() {
             <Grid container spacing={2.5}>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Company Name" value={form.companyName || ""}
-                  onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-                  disabled={!editing} size="small" />
+                  onChange={handleFieldChange("companyName")}
+                  disabled={!editing} size="small"
+                  error={!!errors.companyName} helperText={errors.companyName} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Email" value={form.email || ""}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  disabled={!editing} size="small" />
+                  onChange={handleFieldChange("email")}
+                  disabled={!editing} size="small"
+                  error={!!errors.email} helperText={errors.email} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Industry" value={form.industry || ""}
-                  onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                  onChange={handleFieldChange("industry")}
                   disabled={!editing} size="small" />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Company Size" value={form.size || ""}
-                  onChange={(e) => setForm({ ...form, size: e.target.value })}
+                  onChange={handleFieldChange("size")}
                   disabled={!editing} size="small" placeholder="e.g. 50-100 employees" />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Location" value={form.location || ""}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  onChange={handleFieldChange("location")}
                   disabled={!editing} size="small" />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Website" value={form.website || ""}
-                  onChange={(e) => setForm({ ...form, website: e.target.value })}
-                  disabled={!editing} size="small" />
+                  onChange={handleFieldChange("website")}
+                  disabled={!editing} size="small"
+                  error={!!errors.website} helperText={errors.website} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Phone" value={form.phone || ""}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  disabled={!editing} size="small" />
+                  onChange={handleFieldChange("phone")}
+                  disabled={!editing} size="small"
+                  error={!!errors.phone} helperText={errors.phone} />
               </Grid>
               <Grid item xs={12}>
                 <TextField fullWidth label="Description" value={form.description || ""}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={handleFieldChange("description")}
                   disabled={!editing} multiline rows={4} size="small" />
               </Grid>
             </Grid>

@@ -23,12 +23,22 @@ export const getStudentProfile = async (req, res) => {
   }
 };
 
+const allowedStudentFields = [
+  "university", "degree", "major", "graduationYear",
+  "skills", "phone", "location", "bio", "resume",
+];
+
 export const updateStudentProfile = async (req, res) => {
   try {
+    const updates = {};
+    allowedStudentFields.forEach((field) => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+
     let student = await Student.findOneAndUpdate(
       { user: req.user.id },
-      { $set: req.body },
-      { new: true, upsert: true }
+      { $set: updates },
+      { new: true, upsert: true, runValidators: true }
     ).populate("user", "-password");
 
     const data = {

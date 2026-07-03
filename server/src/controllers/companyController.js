@@ -21,12 +21,22 @@ export const getCompanyProfile = async (req, res) => {
   }
 };
 
+const allowedCompanyFields = [
+  "companyName", "website", "industry", "description",
+  "location", "phone", "size", "logo",
+];
+
 export const updateCompanyProfile = async (req, res) => {
   try {
+    const updates = {};
+    allowedCompanyFields.forEach((field) => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+
     const company = await Company.findOneAndUpdate(
       { user: req.user._id },
-      { $set: req.body },
-      { new: true, upsert: true }
+      { $set: updates },
+      { new: true, upsert: true, runValidators: true }
     ).populate("user", "-password");
 
     const data = {

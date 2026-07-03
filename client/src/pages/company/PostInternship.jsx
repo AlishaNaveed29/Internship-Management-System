@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import CompanyLayout from "../../layouts/CompanyLayout";
 import API from "../../services/api";
+import { validators, validate } from "../../utils/validation";
 
 const durations = ["3 months", "6 months", "1 year"];
 const types = ["Full-time", "Part-time", "Remote", "Hybrid"];
@@ -21,6 +22,7 @@ const types = ["Full-time", "Part-time", "Remote", "Hybrid"];
 function PostInternship() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -35,14 +37,21 @@ function PostInternship() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
+  };
+
+  const internshipValidation = {
+    title: [validators.required],
+    description: [validators.required, validators.minLength(20)],
+    location: [validators.required],
+    positions: [validators.number, validators.positive],
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title || !form.description) {
-      toast.error("Title and description are required");
-      return;
-    }
+    const errs = validate(internshipValidation, form);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setLoading(true);
     try {
       await API.post("/internships", form);
@@ -74,7 +83,8 @@ function PostInternship() {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                required
+                error={!!errors.title}
+                helperText={errors.title}
               />
             </Grid>
             <Grid item xs={12}>
@@ -86,8 +96,8 @@ function PostInternship() {
                 onChange={handleChange}
                 multiline
                 rows={4}
-                required
-                helperText="Describe the internship role, responsibilities, and what the candidate will learn"
+                error={!!errors.description}
+                helperText={errors.description || "Describe the internship role, responsibilities, and what the candidate will learn"}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -98,6 +108,8 @@ function PostInternship() {
                 value={form.location}
                 onChange={handleChange}
                 placeholder="e.g. New York, Remote"
+                error={!!errors.location}
+                helperText={errors.location}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -153,6 +165,8 @@ function PostInternship() {
                 value={form.positions}
                 onChange={handleChange}
                 inputProps={{ min: 1 }}
+                error={!!errors.positions}
+                helperText={errors.positions}
               />
             </Grid>
             <Grid item xs={12}>

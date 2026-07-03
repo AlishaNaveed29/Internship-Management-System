@@ -15,6 +15,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Pagination,
 } from "@mui/material";
 import { People } from "@mui/icons-material";
 import { toast } from "react-toastify";
@@ -33,11 +34,14 @@ function Applicants() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchApplicants = async () => {
+  const fetchApplicants = async (p = 1) => {
     try {
-      const res = await API.get("/applications/company");
+      const res = await API.get(`/applications/company?page=${p}&limit=10`);
       setApplications(res.data.applications || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -46,8 +50,13 @@ function Applicants() {
   };
 
   useEffect(() => {
-    fetchApplicants();
-  }, []);
+    fetchApplicants(page);
+  }, [page]);
+
+  const handleFilterChange = (e) => {
+    setFilter(e.target.value);
+    setPage(1);
+  };
 
   const updateStatus = async (id, status) => {
     try {
@@ -72,7 +81,7 @@ function Applicants() {
         </Box>
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Filter Status</InputLabel>
-          <Select value={filter} label="Filter Status" onChange={(e) => setFilter(e.target.value)}>
+          <Select value={filter} label="Filter Status" onChange={handleFilterChange}>
             <MenuItem value="all">All</MenuItem>
             <MenuItem value="pending">Pending</MenuItem>
             <MenuItem value="reviewed">Reviewed</MenuItem>
@@ -155,6 +164,11 @@ function Applicants() {
               </TableBody>
             </Table>
           </TableContainer>
+          {totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+            </Box>
+          )}
         </Paper>
       )}
     </CompanyLayout>

@@ -19,6 +19,7 @@ import {
   AvatarGroup,
   Fade,
   Grow,
+  Pagination,
 } from "@mui/material";
 import {
   Search,
@@ -55,11 +56,14 @@ function BrowseInternships() {
   const [location, setLocation] = useState("All");
   const [duration, setDuration] = useState("All");
   const [applying, setApplying] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const loadInternships = async () => {
+  const loadInternships = async (p = 1) => {
     try {
-      const res = await API.get("/internships");
+      const res = await API.get(`/internships?page=${p}&limit=9`);
       setInternships(res.data.internships || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -68,8 +72,8 @@ function BrowseInternships() {
   };
 
   useEffect(() => {
-    loadInternships();
-  }, []);
+    loadInternships(page);
+  }, [page]);
 
   const apply = async (id) => {
     setApplying(id);
@@ -82,6 +86,28 @@ function BrowseInternships() {
     } finally {
       setApplying(null);
     }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handleLocationChange = (e) => {
+    setLocation(e.target.value);
+    setPage(1);
+  };
+
+  const handleDurationChange = (e) => {
+    setDuration(e.target.value);
+    setPage(1);
+  };
+
+  const handleClear = () => {
+    setSearch("");
+    setLocation("All");
+    setDuration("All");
+    setPage(1);
   };
 
   const filtered = internships.filter((item) => {
@@ -135,7 +161,7 @@ function BrowseInternships() {
               Browse hundreds of internship opportunities from top companies
             </Typography>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Chip icon={<BusinessCenter />} label={`${internships.length} Opportunities`} sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 600, "& .MuiChip-icon": { color: "rgba(255,255,255,0.8)" } }} />
+                <Chip icon={<BusinessCenter />} label={`${totalPages > 0 ? `${(page - 1) * 9 + 1}-${Math.min(page * 9, totalPages * 9)}` : "0"} Opportunities`} sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 600, "& .MuiChip-icon": { color: "rgba(255,255,255,0.8)" } }} />
               <Chip icon={<Bolt />} label="Top Companies" sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 600, "& .MuiChip-icon": { color: "rgba(255,255,255,0.8)" } }} />
               <Chip icon={<School />} label="Quick Apply" sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "#fff", fontWeight: 600, "& .MuiChip-icon": { color: "rgba(255,255,255,0.8)" } }} />
             </Stack>
@@ -159,7 +185,7 @@ function BrowseInternships() {
                 size="small"
                 placeholder="Search internships, companies..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start"><Search sx={{ color: "#94A3B8" }} /></InputAdornment>
@@ -174,7 +200,7 @@ function BrowseInternships() {
                 <Select
                   value={location}
                   label="Location"
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={handleLocationChange}
                   sx={{ bgcolor: "#F8FAFC" }}
                 >
                   {locations.map((l) => <MenuItem key={l} value={l}>{l}</MenuItem>)}
@@ -187,7 +213,7 @@ function BrowseInternships() {
                 <Select
                   value={duration}
                   label="Duration"
-                  onChange={(e) => setDuration(e.target.value)}
+                  onChange={handleDurationChange}
                   sx={{ bgcolor: "#F8FAFC" }}
                 >
                   {durations.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
@@ -199,7 +225,7 @@ function BrowseInternships() {
                 fullWidth
                 variant="outlined"
                 startIcon={<Clear />}
-                onClick={() => { setSearch(""); setLocation("All"); setDuration("All"); }}
+                onClick={handleClear}
                 sx={{ py: 1 }}
               >
                 Clear
@@ -265,7 +291,7 @@ function BrowseInternships() {
               <Button
                 variant="contained"
                 startIcon={<Clear />}
-                onClick={() => { setSearch(""); setLocation("All"); setDuration("All"); }}
+                onClick={handleClear}
               >
                 Reset Filters
               </Button>
@@ -446,6 +472,11 @@ function BrowseInternships() {
               </Grow>
             ))}
           </Grid>
+        )}
+        {totalPages > 1 && (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+            <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" size="large" />
+          </Box>
         )}
       </Box>
     </StudentLayout>

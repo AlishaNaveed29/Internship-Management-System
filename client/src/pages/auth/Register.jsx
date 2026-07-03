@@ -16,11 +16,13 @@ import {
 import { Visibility, VisibilityOff, Email, Lock, Person, Work, School } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import API from "../../services/api";
+import { validators, validate } from "../../utils/validation";
 
 function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -30,22 +32,24 @@ function Register() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
   };
 
   const handleRoleChange = (_, newRole) => {
     if (newRole) setForm({ ...form, role: newRole });
   };
 
+  const validationRules = {
+    fullName: [validators.required],
+    email: [validators.required, validators.email],
+    password: [validators.required, validators.password],
+  };
+
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.fullName || !form.email || !form.password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-    if (form.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
-      return;
-    }
+    const errs = validate(validationRules, form);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setLoading(true);
     try {
       await API.post("/auth/register", form);
@@ -131,6 +135,8 @@ function Register() {
               value={form.fullName}
               onChange={handleChange}
               margin="normal"
+              error={!!errors.fullName}
+              helperText={errors.fullName}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -147,6 +153,8 @@ function Register() {
               value={form.email}
               onChange={handleChange}
               margin="normal"
+              error={!!errors.email}
+              helperText={errors.email}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -163,6 +171,8 @@ function Register() {
               value={form.password}
               onChange={handleChange}
               margin="normal"
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

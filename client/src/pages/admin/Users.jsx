@@ -13,6 +13,7 @@ import {
   Avatar,
   TextField,
   InputAdornment,
+  Pagination,
 } from "@mui/material";
 import { Search, People } from "@mui/icons-material";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -29,11 +30,14 @@ function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (p = 1) => {
     try {
-      const res = await API.get("/admin/users");
+      const res = await API.get(`/admin/users?page=${p}&limit=10`);
       setUsers(res.data.users || []);
+      setTotalPages(res.data.pages || 1);
     } catch (err) {
       console.log(err);
     } finally {
@@ -42,8 +46,8 @@ function Users() {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(page);
+  }, [page]);
 
   const filtered = users.filter((u) =>
     u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,11 +63,11 @@ function Users() {
           <Typography variant="h4" fontWeight={800}>Users</Typography>
           <Typography variant="body2" color="text.secondary">Manage all platform users</Typography>
         </Box>
-        <TextField
-          size="small"
-          placeholder="Search users..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          <TextField
+            size="small"
+            placeholder="Search users..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           InputProps={{
             startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
           }}
@@ -130,6 +134,11 @@ function Users() {
               </TableBody>
             </Table>
           </TableContainer>
+          {totalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+            </Box>
+          )}
         </Paper>
       )}
     </AdminLayout>
