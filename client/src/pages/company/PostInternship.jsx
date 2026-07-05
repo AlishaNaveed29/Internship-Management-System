@@ -1,28 +1,13 @@
 import { useState } from "react";
-import {
-  Paper,
-  Typography,
-  Grid,
-  Box,
-  Button,
-  TextField,
-  MenuItem,
-  CircularProgress,
-} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { Paper, Typography, Grid, Box, Button, TextField, MenuItem, CircularProgress } from "@mui/material";
 import { Send } from "@mui/icons-material";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 import CompanyLayout from "../../layouts/CompanyLayout";
 import API from "../../services/api";
-import { validators, validate } from "../../utils/validation";
 
-const durations = ["3 months", "6 months", "1 year"];
-const types = ["Full-time", "Part-time", "Remote", "Hybrid"];
-
-function PostInternship() {
+export default function PostInternship() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -31,31 +16,27 @@ function PostInternship() {
     type: "",
     stipend: "",
     skills: "",
+    positions: "",
     requirements: "",
-    positions: 1,
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
-  };
-
-  const internshipValidation = {
-    title: [validators.required],
-    description: [validators.required, validators.minLength(20)],
-    location: [validators.required],
-    positions: [validators.number, validators.positive],
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errs = validate(internshipValidation, form);
-    setErrors(errs);
-    if (Object.keys(errs).length) return;
     setLoading(true);
     try {
-      await API.post("/internships", form);
-      toast.success("Internship posted successfully!");
+      const payload = {
+        ...form,
+        skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+        positions: Number(form.positions),
+        stipend: Number(form.stipend),
+      };
+      await API.post("/internships", payload);
+      toast.success("Internship posted successfully");
       navigate("/company/manage-internships");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to post internship");
@@ -64,143 +45,174 @@ function PostInternship() {
     }
   };
 
+  const durations = ["3 months", "6 months", "1 year"];
+  const types = ["Full-time", "Part-time", "Remote", "Hybrid"];
+
   return (
     <CompanyLayout>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>
-        Post Internship
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Create a new internship opportunity
-      </Typography>
+      <Box>
+        <Typography variant="h4" fontWeight="bold" mb={3} color="#E2E8F0">
+          Post Internship
+        </Typography>
 
-      <Paper sx={{ p: 4, border: "1px solid #F1F5F9", maxWidth: 900 }}>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Internship Title"
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                error={!!errors.title}
-                helperText={errors.title}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                multiline
-                rows={4}
-                error={!!errors.description}
-                helperText={errors.description || "Describe the internship role, responsibilities, and what the candidate will learn"}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Location"
-                name="location"
-                value={form.location}
-                onChange={handleChange}
-                placeholder="e.g. New York, Remote"
-                error={!!errors.location}
-                helperText={errors.location}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Duration"
-                name="duration"
-                value={form.duration}
-                onChange={handleChange}
-              >
-                {durations.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Type"
-                name="type"
-                value={form.type}
-                onChange={handleChange}
-              >
-                {types.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Stipend / Salary"
-                name="stipend"
-                value={form.stipend}
-                onChange={handleChange}
-                placeholder="e.g. $2000/month"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Required Skills"
-                name="skills"
-                value={form.skills}
-                onChange={handleChange}
-                placeholder="e.g. React, Node.js, Python"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Open Positions"
-                name="positions"
-                value={form.positions}
-                onChange={handleChange}
-                inputProps={{ min: 1 }}
-                error={!!errors.positions}
-                helperText={errors.positions}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Requirements"
-                name="requirements"
-                value={form.requirements}
-                onChange={handleChange}
-                multiline
-                rows={3}
-                placeholder="List the key requirements for this position"
-              />
-            </Grid>
-          </Grid>
+        <Paper sx={{ bgcolor: "#13182B", borderRadius: 3, p: 4, border: "1px solid #1E293B" }}>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  name="title"
+                  label="Title"
+                  value={form.title}
+                  onChange={handleChange}
+                  required
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
 
-          <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "flex-end" }}>
-            <Button variant="outlined" onClick={() => navigate("/company/manage-internships")}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={loading ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : <Send />}
-              disabled={loading}
-              size="large"
-            >
-              {loading ? "Posting..." : "Post Internship"}
-            </Button>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  name="description"
+                  label="Description"
+                  value={form.description}
+                  onChange={handleChange}
+                  required
+                  multiline
+                  rows={4}
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  name="location"
+                  label="Location"
+                  value={form.location}
+                  onChange={handleChange}
+                  required
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  name="duration"
+                  label="Duration"
+                  value={form.duration}
+                  onChange={handleChange}
+                  required
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" }, "& .MuiSelect-icon": { color: "#94A3B8" } }}
+                >
+                  {durations.map((d) => (
+                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  name="type"
+                  label="Type"
+                  value={form.type}
+                  onChange={handleChange}
+                  required
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" }, "& .MuiSelect-icon": { color: "#94A3B8" } }}
+                >
+                  {types.map((t) => (
+                    <MenuItem key={t} value={t}>{t}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  name="stipend"
+                  label="Stipend"
+                  type="number"
+                  value={form.stipend}
+                  onChange={handleChange}
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  name="skills"
+                  label="Skills (comma-separated)"
+                  value={form.skills}
+                  onChange={handleChange}
+                  required
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  name="positions"
+                  label="Positions"
+                  type="number"
+                  value={form.positions}
+                  onChange={handleChange}
+                  required
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  name="requirements"
+                  label="Requirements"
+                  value={form.requirements}
+                  onChange={handleChange}
+                  multiline
+                  rows={3}
+                  variant="outlined"
+                  size="small"
+                  sx={{ "& .MuiOutlinedInput-root": { color: "#E2E8F0", "& fieldset": { borderColor: "#1E293B" }, "&:hover fieldset": { borderColor: "#6366F1" }, "&.Mui-focused fieldset": { borderColor: "#6366F1" } }, "& .MuiInputLabel-root": { color: "#94A3B8" } }}
+                />
+              </Grid>
+            </Grid>
+
+            <Box display="flex" justifyContent="flex-end" mt={3}>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Send />}
+                disabled={loading}
+                sx={{ bgcolor: "#6366F1", "&:hover": { bgcolor: "#5558E6" }, px: 4, py: 1.5 }}
+              >
+                {loading ? "Posting..." : "Post Internship"}
+              </Button>
+            </Box>
           </Box>
-        </form>
-      </Paper>
+        </Paper>
+      </Box>
     </CompanyLayout>
   );
 }
-
-export default PostInternship;

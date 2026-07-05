@@ -1,12 +1,24 @@
 import DashboardLayout from "./DashboardLayout";
-import { adminMenus } from "../components/admin/AdminSidebar";
+import {
+  Dashboard,
+  People,
+  Business,
+  Work,
+  Assignment,
+} from "@mui/icons-material";
 
-function AdminLayout({ children }) {
+const sidebarItems = [
+  { label: "Dashboard", path: "/admin/dashboard", icon: <Dashboard /> },
+  { label: "Users", path: "/admin/users", icon: <People /> },
+  { label: "Companies", path: "/admin/companies", icon: <Business /> },
+  { label: "Internships", path: "/admin/internships", icon: <Work /> },
+  { label: "Applications", path: "/admin/applications", icon: <Assignment /> },
+];
+
+export default function AdminLayout({ children }) {
   return (
-    <DashboardLayout basePath="admin" menus={adminMenus}>
+    <DashboardLayout title="Admin Dashboard" sidebarItems={sidebarItems} roleColor="#EC4899">
       {children}
     </DashboardLayout>
   );
 }
-
-export default AdminLayout;

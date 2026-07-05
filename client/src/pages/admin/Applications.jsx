@@ -1,94 +1,111 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Typography,
-  Paper,
-  Box,
-  Chip,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TableContainer,
-  Avatar,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Pagination,
+  Box, Typography, Paper, Table, TableHead, TableRow, TableCell,
+  TableBody, TableContainer, Chip, Avatar, TextField, InputAdornment,
+  Pagination, CircularProgress, FormControl, InputLabel, Select, MenuItem
 } from "@mui/material";
 import { Search, Assignment } from "@mui/icons-material";
 import AdminLayout from "../../layouts/AdminLayout";
-import Loader from "../../components/common/Loader";
 import API from "../../services/api";
 
-const statusColors = {
-  pending: { bg: "#FEF3C7", color: "#D97706" },
-  reviewed: { bg: "#DBEAFE", color: "#2563EB" },
-  accepted: { bg: "#D1FAE5", color: "#059669" },
-  rejected: { bg: "#FEE2E2", color: "#DC2626" },
-};
-
-function AdminApplications() {
+export default function AdminApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchApplications = async (p = 1) => {
-    try {
-      const res = await API.get(`/admin/applications?page=${p}&limit=10`);
-      setApplications(res.data.applications || []);
-      setTotalPages(res.data.pages || 1);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
+  const fetchApplications = () => {
+    setLoading(true);
+    const params = { search, page, limit: 10 };
+    if (status) params.status = status;
+    API.get("/admin/applications", { params })
+      .then(({ data }) => {
+        setApplications(data.applications || []);
+        setTotalPages(data.totalPages || 1);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchApplications(page);
-  }, [page]);
+    fetchApplications();
+  }, [page, status]);
 
-  const filtered = applications.filter((a) => {
-    const matchSearch =
-      a.student?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-      a.internship?.title?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || a.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  useEffect(() => {
+    setPage(1);
+  }, [search, status]);
 
-  if (loading) return <AdminLayout><Loader /></AdminLayout>;
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+  };
+
+  const handleStatusChange = (e) => {
+    setStatus(e.target.value);
+  };
+
+  const statusColor = {
+    pending: "#F59E0B",
+    accepted: "#22C55E",
+    rejected: "#EF4444",
+    reviewing: "#6366F1",
+  };
 
   return (
     <AdminLayout>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
+      <Box sx={{ mb: 4, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h4" fontWeight={800}>Applications</Typography>
-          <Typography variant="body2" color="text.secondary">View all applications across the platform</Typography>
+          <Typography variant="h4" fontWeight={700} sx={{ color: "#F1F5F9", mb: 1 }}>
+            Applications
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#64748B" }}>
+            Manage internship applications
+          </Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
           <TextField
-            size="small"
-            placeholder="Search..."
+            placeholder="Search applications..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
+            onChange={handleSearch}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: <InputAdornment position="start"><Search sx={{ color: "#64748B" }} /></InputAdornment>,
+              },
             }}
-            sx={{ minWidth: 200 }}
+            sx={{
+              minWidth: 260,
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "#13182B",
+                borderRadius: 3,
+                color: "#F1F5F9",
+                "& fieldset": { borderColor: "rgba(99,102,241,0.2)" },
+                "&:hover fieldset": { borderColor: "rgba(99,102,241,0.4)" },
+                "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+              },
+            }}
           />
-          <FormControl size="small" sx={{ minWidth: 130 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: 150,
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "#13182B",
+                borderRadius: 3,
+                color: "#F1F5F9",
+                "& fieldset": { borderColor: "rgba(99,102,241,0.2)" },
+                "&:hover fieldset": { borderColor: "rgba(99,102,241,0.4)" },
+                "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+              },
+              "& .MuiInputLabel-root": { color: "#64748B", "&.Mui-focused": { color: "#6366F1" } },
+            }}
+          >
             <InputLabel>Status</InputLabel>
-            <Select value={statusFilter} label="Status" onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-              <MenuItem value="all">All</MenuItem>
+            <Select value={status} onChange={handleStatusChange} label="Status">
+              <MenuItem value="">All</MenuItem>
               <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="reviewed">Reviewed</MenuItem>
+              <MenuItem value="reviewing">Reviewing</MenuItem>
               <MenuItem value="accepted">Accepted</MenuItem>
               <MenuItem value="rejected">Rejected</MenuItem>
             </Select>
@@ -96,76 +113,84 @@ function AdminApplications() {
         </Box>
       </Box>
 
-      {filtered.length === 0 ? (
-        <Paper sx={{ p: 8, textAlign: "center", border: "1px solid #F1F5F9" }}>
-          <Assignment sx={{ fontSize: 64, color: "#CBD5E1", mb: 2 }} />
-          <Typography variant="h6" color="text.secondary">No applications found</Typography>
-        </Paper>
-      ) : (
-        <Paper sx={{ border: "1px solid #F1F5F9", overflow: "hidden" }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><b>Student</b></TableCell>
-                  <TableCell><b>Internship</b></TableCell>
-                  <TableCell><b>Company</b></TableCell>
-                  <TableCell><b>Status</b></TableCell>
-                  <TableCell><b>Applied</b></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filtered.map((app) => (
-                  <TableRow key={app._id} sx={{ "&:hover": { bgcolor: "#F8FAFC" } }}>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: "#6366F1", fontSize: 13, fontWeight: 700 }}>
-                          {app.student?.fullName?.charAt(0) || "S"}
-                        </Avatar>
-                        <Typography variant="body2" fontWeight={600}>{app.student?.fullName || "N/A"}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>{app.internship?.title || "N/A"}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {app.internship?.company?.companyName || "N/A"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={app.status}
-                        size="small"
-                        sx={{
-                          bgcolor: statusColors[app.status]?.bg || "#F1F5F9",
-                          color: statusColors[app.status]?.color || "#475569",
-                          fontWeight: 700,
-                          fontSize: 11,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(app.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric", month: "short", day: "numeric",
-                        })}
-                      </Typography>
-                    </TableCell>
+      <Paper sx={{ borderRadius: 4, bgcolor: "#13182B", border: "1px solid rgba(99,102,241,0.1)", overflow: "hidden" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8 }}>
+            <CircularProgress sx={{ color: "#6366F1" }} />
+          </Box>
+        ) : applications.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <Assignment sx={{ fontSize: 48, color: "#64748B", mb: 2 }} />
+            <Typography variant="h6" sx={{ color: "#94A3B8", mb: 1 }}>No applications found</Typography>
+            <Typography variant="body2" sx={{ color: "#64748B" }}>
+              {search ? "Try a different search term" : "No applications have been submitted yet"}
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Student</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Internship</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Company</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Status</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Applied Date</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {totalPages > 1 && (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
-            </Box>
-          )}
-        </Paper>
-      )}
+                </TableHead>
+                <TableBody>
+                  {applications.map((app) => (
+                    <TableRow key={app._id} sx={{ "&:hover": { bgcolor: "rgba(99,102,241,0.05)" } }}>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#F1F5F9" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Avatar sx={{ width: 34, height: 34, bgcolor: "#6366F1", fontSize: 13, fontWeight: 700 }}>
+                            {app.student?.fullName?.charAt(0) || "?"}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={600}>{app.student?.fullName || "N/A"}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>
+                        {app.internship?.title || "N/A"}
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>
+                        {app.internship?.company?.companyName || app.internship?.company?.fullName || "N/A"}
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                        <Chip
+                          label={app.status || "pending"}
+                          size="small"
+                          sx={{
+                            textTransform: "capitalize",
+                            fontWeight: 600,
+                            bgcolor: `${statusColor[app.status] || statusColor.pending}26`,
+                            color: statusColor[app.status] || statusColor.pending,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>
+                        {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {totalPages > 1 && (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, val) => setPage(val)}
+                  sx={{
+                    "& .MuiPaginationItem-root": { color: "#94A3B8", "&.Mui-selected": { bgcolor: "#6366F1", color: "#fff" } },
+                  }}
+                />
+              </Box>
+            )}
+          </>
+        )}
+      </Paper>
     </AdminLayout>
   );
 }
-
-export default AdminApplications;

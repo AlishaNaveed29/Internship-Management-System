@@ -1,184 +1,200 @@
-import { useEffect, useState } from "react";
-import {
-  Paper,
-  Typography,
-  Grid,
-  Box,
-  Avatar,
-  Button,
-  Chip,
-  TextField,
-} from "@mui/material";
+import { useState, useEffect } from "react";
+import { Paper, Typography, Grid, Box, Avatar, Button, Chip, TextField } from "@mui/material";
 import { Edit, Save, Cancel } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import CompanyLayout from "../../layouts/CompanyLayout";
 import API from "../../services/api";
-import Loader from "../../components/common/Loader";
-import { validators, validate } from "../../utils/validation";
 
-function CompanyProfile() {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function CompanyProfile() {
+  const [profile, setProfile] = useState({
+    companyName: "",
+    email: "",
+    industry: "",
+    size: "",
+    location: "",
+    website: "",
+    phone: "",
+    description: "",
+  });
   const [editing, setEditing] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [form, setForm] = useState({});
-
-  const fetchProfile = async () => {
-    try {
-      const res = await API.get("/companies/profile");
-      setProfile(res.data.company);
-      setForm({
-        companyName: res.data.company?.companyName || "",
-        email: res.data.company?.email || "",
-        industry: res.data.company?.industry || "",
-        location: res.data.company?.location || "",
-        website: res.data.company?.website || "",
-        phone: res.data.company?.phone || "",
-        description: res.data.company?.description || "",
-        size: res.data.company?.size || "",
-      });
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await API.get("/companies/profile");
+        const data = res.data;
+        setProfile({
+          companyName: data.companyName || "",
+          email: data.email || "",
+          industry: data.industry || "",
+          size: data.size || "",
+          location: data.location || "",
+          website: data.website || "",
+          phone: data.phone || "",
+          description: data.description || "",
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchProfile();
   }, []);
 
-  const profileValidation = {
-    companyName: [validators.required],
-    email: [validators.required, validators.email],
-    website: [validators.url],
-    phone: [validators.phone],
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
   const handleSave = async () => {
-    const errs = validate(profileValidation, form);
-    setErrors(errs);
-    if (Object.keys(errs).length) return;
+    setSaving(true);
     try {
-      const res = await API.put("/companies/profile", form);
-      setProfile(res.data.company);
+      await API.put("/companies/profile", profile);
+      toast.success("Profile updated successfully");
       setEditing(false);
-      setErrors({});
-      toast.success("Company profile updated");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed");
+      toast.error(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleFieldChange = (field) => (e) => {
-    setForm({ ...form, [field]: e.target.value });
-    if (errors[field]) setErrors({ ...errors, [field]: null });
+  const handleCancel = () => {
+    setEditing(false);
   };
 
-  if (loading) return <CompanyLayout><Loader /></CompanyLayout>;
+  const fields = [
+    { name: "companyName", label: "Company Name", md: 6 },
+    { name: "email", label: "Email", md: 6 },
+    { name: "industry", label: "Industry", md: 4 },
+    { name: "size", label: "Size", md: 4 },
+    { name: "location", label: "Location", md: 4 },
+    { name: "website", label: "Website", md: 6 },
+    { name: "phone", label: "Phone", md: 6 },
+  ];
+
+  if (loading) {
+    return (
+      <CompanyLayout>
+        <Typography color="#94A3B8">Loading profile...</Typography>
+      </CompanyLayout>
+    );
+  }
 
   return (
     <CompanyLayout>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
-        <Box>
-          <Typography variant="h4" fontWeight={800}>Company Profile</Typography>
-          <Typography variant="body2" color="text.secondary">Manage your company information</Typography>
-        </Box>
-        <Button
-          variant={editing ? "outlined" : "contained"}
-          startIcon={editing ? <Cancel /> : <Edit />}
-          onClick={() => editing ? setEditing(false) : setEditing(true)}
-          color={editing ? "error" : "primary"}
-        >
-          {editing ? "Cancel" : "Edit Profile"}
-        </Button>
-      </Box>
+      <Box>
+        <Typography variant="h4" fontWeight="bold" mb={3} color="#E2E8F0">
+          Company Profile
+        </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 4, textAlign: "center", border: "1px solid #F1F5F9" }}>
-            <Avatar
-              sx={{
-                width: 100,
-                height: 100,
-                mx: "auto",
-                mb: 2,
-                bgcolor: "#6366F1",
-                fontSize: 36,
-                fontWeight: 700,
-              }}
-            >
-              {profile?.companyName?.charAt(0) || "C"}
-            </Avatar>
-            <Typography variant="h6" fontWeight={700}>{profile?.companyName}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{profile?.email}</Typography>
-            <Chip
-              label={profile?.industry || "Technology"}
-              sx={{ bgcolor: "rgba(99,102,241,0.1)", color: "#6366F1", fontWeight: 600 }}
-            />
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 4, border: "1px solid #F1F5F9" }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>Company Information</Typography>
-            <Grid container spacing={2.5}>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Company Name" value={form.companyName || ""}
-                  onChange={handleFieldChange("companyName")}
-                  disabled={!editing} size="small"
-                  error={!!errors.companyName} helperText={errors.companyName} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Email" value={form.email || ""}
-                  onChange={handleFieldChange("email")}
-                  disabled={!editing} size="small"
-                  error={!!errors.email} helperText={errors.email} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Industry" value={form.industry || ""}
-                  onChange={handleFieldChange("industry")}
-                  disabled={!editing} size="small" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Company Size" value={form.size || ""}
-                  onChange={handleFieldChange("size")}
-                  disabled={!editing} size="small" placeholder="e.g. 50-100 employees" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Location" value={form.location || ""}
-                  onChange={handleFieldChange("location")}
-                  disabled={!editing} size="small" />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Website" value={form.website || ""}
-                  onChange={handleFieldChange("website")}
-                  disabled={!editing} size="small"
-                  error={!!errors.website} helperText={errors.website} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Phone" value={form.phone || ""}
-                  onChange={handleFieldChange("phone")}
-                  disabled={!editing} size="small"
-                  error={!!errors.phone} helperText={errors.phone} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Description" value={form.description || ""}
-                  onChange={handleFieldChange("description")}
-                  disabled={!editing} multiline rows={4} size="small" />
-              </Grid>
+        <Paper sx={{ bgcolor: "#13182B", borderRadius: 3, p: 4, border: "1px solid #1E293B" }}>
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={4} display="flex" flexDirection="column" alignItems="center">
+              <Avatar sx={{ width: 120, height: 120, bgcolor: "#6366F1", fontSize: 48, mb: 2 }}>
+                {profile.companyName?.charAt(0)?.toUpperCase() || "C"}
+              </Avatar>
+              <Typography variant="h5" fontWeight="bold" color="#E2E8F0">
+                {profile.companyName || "Company Name"}
+              </Typography>
+              <Typography variant="body2" color="#94A3B8" mb={1}>
+                {profile.email}
+              </Typography>
+              {profile.industry && (
+                <Chip label={profile.industry} sx={{ bgcolor: "#6366F1", color: "#fff", fontWeight: 600 }} />
+              )}
+              {!editing && (
+                <Button
+                  variant="contained"
+                  startIcon={<Edit />}
+                  onClick={() => setEditing(true)}
+                  sx={{ mt: 3, bgcolor: "#6366F1", "&:hover": { bgcolor: "#5558E6" } }}
+                >
+                  Edit Profile
+                </Button>
+              )}
             </Grid>
-            {editing && (
-              <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                <Button variant="outlined" onClick={() => setEditing(false)}>Cancel</Button>
-                <Button variant="contained" startIcon={<Save />} onClick={handleSave}>Save Changes</Button>
-              </Box>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+
+            <Grid item xs={12} md={8}>
+              <Grid container spacing={2}>
+                {fields.map((field) => (
+                  <Grid item xs={12} md={field.md} key={field.name}>
+                    <TextField
+                      fullWidth
+                      name={field.name}
+                      label={field.label}
+                      value={profile[field.name]}
+                      onChange={handleChange}
+                      disabled={!editing}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          color: "#E2E8F0",
+                          "& fieldset": { borderColor: "#1E293B" },
+                          "&:hover fieldset": { borderColor: "#6366F1" },
+                          "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+                        },
+                        "& .MuiInputLabel-root": { color: "#94A3B8" },
+                        "& .Mui-disabled": { color: "#64748B !important", WebkitTextFillColor: "#64748B !important" },
+                      }}
+                    />
+                  </Grid>
+                ))}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    name="description"
+                    label="Description"
+                    value={profile.description}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    multiline
+                    rows={4}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        color: "#E2E8F0",
+                        "& fieldset": { borderColor: "#1E293B" },
+                        "&:hover fieldset": { borderColor: "#6366F1" },
+                        "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+                      },
+                      "& .MuiInputLabel-root": { color: "#94A3B8" },
+                      "& .Mui-disabled": { color: "#64748B !important", WebkitTextFillColor: "#64748B !important" },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+
+              {editing && (
+                <Box display="flex" gap={2} mt={3}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Save />}
+                    onClick={handleSave}
+                    disabled={saving}
+                    sx={{ bgcolor: "#6366F1", "&:hover": { bgcolor: "#5558E6" } }}
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Cancel />}
+                    onClick={handleCancel}
+                    sx={{ color: "#94A3B8", borderColor: "#1E293B", "&:hover": { borderColor: "#EF4444", color: "#EF4444" } }}
+                  >
+                    Cancel
+                  </Button>
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </Paper>
+      </Box>
     </CompanyLayout>
   );
 }
-
-export default CompanyProfile;

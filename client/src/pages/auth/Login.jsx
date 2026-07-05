@@ -1,56 +1,43 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
-  Box,
-  Button,
-  Container,
-  Paper,
-  TextField,
-  Typography,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
+  Box, Typography, TextField, Button, InputAdornment, IconButton, Paper, Divider
 } from "@mui/material";
-import { Visibility, VisibilityOff, Email, Lock, Work } from "@mui/icons-material";
+import { Mail, Lock, Visibility, VisibilityOff, Work } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import API from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { validators, validate } from "../../utils/validation";
 
-function Login() {
+export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [form, setForm] = useState({ email: "", password: "" });
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: null });
-  };
-
-  const validationRules = {
-    email: [validators.required, validators.email],
-    password: [validators.required, validators.password],
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errs = validate(validationRules, form);
-    setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (!form.email || !form.password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
     setLoading(true);
     try {
-      const res = await API.post("/auth/login", form);
-      login(res.data.token, res.data.user);
-      toast.success(`Welcome back, ${res.data.user.fullName}!`);
-      const role = res.data.user.role;
+      const { data } = await API.post("/auth/login", form);
+      login(data.token, data.user);
+      toast.success(`Welcome back, ${data.user.name}!`);
+      const role = data.user.role;
       if (role === "student") navigate("/student/dashboard");
       else if (role === "company") navigate("/company/dashboard");
-      else navigate("/admin/dashboard");
+      else if (role === "admin") navigate("/admin/dashboard");
+      else navigate("/");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed");
+      toast.error(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -61,48 +48,62 @@ function Login() {
       sx={{
         minHeight: "100vh",
         display: "flex",
-        background: "linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #0B0F1E 0%, #1A1F35 50%, #0F1529 100%)",
+        p: 2,
       }}
     >
-      <Container maxWidth="sm" sx={{ display: "flex", alignItems: "center", minHeight: "100vh" }}>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        style={{ width: "100%", maxWidth: 440 }}
+      >
         <Paper
-          elevation={0}
           sx={{
-            p: { xs: 4, md: 5 },
-            width: "100%",
-            border: "1px solid #F1F5F9",
+            p: 4.5,
+            background: "linear-gradient(135deg, #13182B 0%, #1A1F35 100%)",
+            border: "1px solid rgba(99,102,241,0.15)",
           }}
         >
           <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", mb: 2 }}>
-              <Work sx={{ color: "#6366F1", mr: 1, fontSize: 32 }} />
-              <Typography variant="h4" fontWeight={800} sx={{ color: "#6366F1" }}>
-                InternHub
-              </Typography>
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: 3,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+                mb: 2,
+                boxShadow: "0 8px 24px rgba(99,102,241,0.3)",
+              }}
+            >
+              <Work sx={{ fontSize: 28, color: "#fff" }} />
             </Box>
-            <Typography variant="h5" fontWeight={700}>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
               Welcome Back
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Sign in to continue to your account
+            <Typography variant="body2" color="text.secondary">
+              Sign in to your InternHub account
             </Typography>
           </Box>
 
-          <form onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Email Address"
+              label="Email"
               name="email"
               type="email"
               value={form.email}
               onChange={handleChange}
-              margin="normal"
-              error={!!errors.email}
-              helperText={errors.email}
+              sx={{ mb: 2.5 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Email sx={{ color: "#94A3B8", fontSize: 20 }} />
+                    <Mail sx={{ color: "#94A3B8", fontSize: 20 }} />
                   </InputAdornment>
                 ),
               }}
@@ -114,9 +115,7 @@ function Login() {
               type={showPassword ? "text" : "password"}
               value={form.password}
               onChange={handleChange}
-              margin="normal"
-              error={!!errors.password}
-              helperText={errors.password}
+              sx={{ mb: 3 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -125,38 +124,39 @@ function Login() {
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: "#94A3B8" }}>
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
             />
-
             <Button
-              fullWidth
               type="submit"
+              fullWidth
               variant="contained"
               size="large"
               disabled={loading}
-              sx={{ mt: 3, py: 1.5 }}
+              sx={{ py: 1.7, fontSize: "1rem", mb: 2.5 }}
             >
-              {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Sign In"}
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
-          </form>
-
-          <Box sx={{ textAlign: "center", mt: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Don't have an account?{" "}
-              <Link to="/register" style={{ color: "#6366F1", fontWeight: 600 }}>
-                Sign Up
-              </Link>
-            </Typography>
           </Box>
+
+          <Divider sx={{ borderColor: "rgba(99,102,241,0.12)", mb: 2.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+              OR
+            </Typography>
+          </Divider>
+
+          <Typography variant="body2" align="center" color="text.secondary">
+            Don't have an account?{" "}
+            <Link to="/register" style={{ color: "#6366F1", textDecoration: "none", fontWeight: 600 }}>
+              Create Account
+            </Link>
+          </Typography>
         </Paper>
-      </Container>
+      </motion.div>
     </Box>
   );
 }
-
-export default Login;

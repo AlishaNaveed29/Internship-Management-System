@@ -2,121 +2,113 @@ import Internship from "../models/Internship.js";
 import Company from "../models/Company.js";
 import Application from "../models/Application.js";
 
-const populateOptions = {
-  path: "company",
-  select: "companyName industry location logo user",
-  populate: { path: "user", select: "fullName email" },
-};
-
-const allowedInternshipFields = [
-  "title", "description", "location", "duration", "type",
-  "stipend", "skills", "requirements", "positions", "status",
-];
-
-export const createInternship = async (req, res) => {
+export const getInternships = async (req, res, next) => {
   try {
-    const company = await Company.findOne({ user: req.user._id });
-    if (!company) {
-      return res.status(404).json({ success: false, message: "Company profile not found." });
-    }
+    const { page = 1, limit = 12, search, location, duration, type } = req.query;
+    const query = { status: "active" };
 
-    const data = { company: company._id };
-    allowedInternshipFields.forEach((field) => {
-      if (req.body[field] !== undefined) data[field] = req.body[field];
-    });
+    if (search) query.title = { $regex: search, $options: "i" };
+    if (location && location !== "All") query.location = location;
+    if (duration && duration !== "All") query.duration = duration;
+    if (type && type !== "All") query.type = type;
 
-    const internship = await Internship.create(data);
+    const total = await Internship.countDocuments(query);
+    const internships = await Internship.find(query)
+      .populate("company", "companyName industry location")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
 
-    res.status(201).json({ success: true, message: "Internship created.", internship });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({ internships, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const getInternships = async (req, res) => {
+export const getMyInternships = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
-    const skip = (page - 1) * limit;
+    const company = await Company.findOne({ userId: req.user._id });
+    if (!company) return res.status(404).json({ message: "Company profile not found" });
 
-    const [internships, total] = await Promise.all([
-      Internship.find().populate(populateOptions).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Internship.countDocuments(),
-    ]);
+    const { page = 1, limit = 10 } = req.query;
+    const query = { company: company._id };
 
-    res.status(200).json({ success: true, internships, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getInternship = async (req, res) => {
-  try {
-    const internship = await Internship.findById(req.params.id).populate(populateOptions);
-    if (!internship) {
-      return res.status(404).json({ success: false, message: "Internship not found." });
-    }
-    res.status(200).json({ success: true, internship });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getMyInternships = async (req, res) => {
-  try {
-    const company = await Company.findOne({ user: req.user._id });
-    if (!company) {
-      return res.status(404).json({ success: false, message: "Company profile not found." });
-    }
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
-    const [internships, total] = await Promise.all([
-      Internship.find({ company: company._id }).populate(populateOptions).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Internship.countDocuments({ company: company._id }),
-    ]);
+    const total = await Internship.countDocuments(query);
+    const internships = await Internship.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
 
     const withCounts = await Promise.all(
-      internships.map(async (internship) => {
-        const count = await Application.countDocuments({ internship: internship._id });
-        return { ...internship.toObject(), applicantCount: count };
-      })
+      internships.map(async (item) => ({
+        ...item,
+        applicantCount: await Application.countDocuments({ internship: item._id }),
+      }))
     );
 
-    res.status(200).json({ success: true, internships: withCounts, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({ internships: withCounts, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const updateInternship = async (req, res) => {
+export const getInternship = async (req, res, next) => {
   try {
-    const updates = {};
-    allowedInternshipFields.forEach((field) => {
-      if (req.body[field] !== undefined) updates[field] = req.body[field];
-    });
-
-    const internship = await Internship.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true });
-    if (!internship) {
-      return res.status(404).json({ success: false, message: "Internship not found." });
-    }
-    res.status(200).json({ success: true, message: "Internship updated.", internship });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const internship = await Internship.findById(req.params.id).populate("company");
+    if (!internship) return res.status(404).json({ message: "Internship not found" });
+    res.json({ internship });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const deleteInternship = async (req, res) => {
+export const createInternship = async (req, res, next) => {
   try {
-    const internship = await Internship.findByIdAndDelete(req.params.id);
-    if (!internship) {
-      return res.status(404).json({ success: false, message: "Internship not found." });
+    const company = await Company.findOne({ userId: req.user._id });
+    if (!company) return res.status(404).json({ message: "Create company profile first" });
+
+    const allowed = ["title", "description", "location", "duration", "type", "stipend", "skills", "requirements", "positions"];
+    const data = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) data[key] = req.body[key];
     }
-    await Application.deleteMany({ internship: req.params.id });
-    res.status(200).json({ success: true, message: "Internship deleted." });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    data.company = company._id;
+
+    const internship = await Internship.create(data);
+    res.status(201).json({ internship });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateInternship = async (req, res, next) => {
+  try {
+    const company = await Company.findOne({ userId: req.user._id });
+    const internship = await Internship.findOne({ _id: req.params.id, company: company._id });
+    if (!internship) return res.status(404).json({ message: "Internship not found or not authorized" });
+
+    const allowed = ["title", "description", "location", "duration", "type", "stipend", "skills", "requirements", "positions", "status"];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) internship[key] = req.body[key];
+    }
+    await internship.save();
+
+    res.json({ internship });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteInternship = async (req, res, next) => {
+  try {
+    const company = await Company.findOne({ userId: req.user._id });
+    const internship = await Internship.findOneAndDelete({ _id: req.params.id, company: company._id });
+    if (!internship) return res.status(404).json({ message: "Internship not found or not authorized" });
+
+    await Application.deleteMany({ internship: internship._id });
+    res.json({ message: "Internship deleted" });
+  } catch (err) {
+    next(err);
   }
 };

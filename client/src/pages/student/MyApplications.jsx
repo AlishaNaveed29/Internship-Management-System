@@ -1,148 +1,136 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Typography,
-  Paper,
-  Box,
-  Chip,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TableContainer,
-  Avatar,
-  IconButton,
-  Pagination,
+  Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
+  Paper, Chip, Avatar, Typography, Box, IconButton, Pagination
 } from "@mui/material";
 import { Visibility, Assignment } from "@mui/icons-material";
 import StudentLayout from "../../layouts/StudentLayout";
-import Loader from "../../components/common/Loader";
 import API from "../../services/api";
 
-const statusColors = {
-  pending: { bg: "#FEF3C7", color: "#D97706", label: "Pending" },
-  reviewed: { bg: "#DBEAFE", color: "#2563EB", label: "Reviewed" },
-  accepted: { bg: "#D1FAE5", color: "#059669", label: "Accepted" },
-  rejected: { bg: "#FEE2E2", color: "#DC2626", label: "Rejected" },
+const STATUS_COLORS = {
+  pending: "warning",
+  reviewed: "info",
+  accepted: "success",
+  rejected: "error",
 };
 
-function MyApplications() {
+export default function MyApplications() {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  const fetchApplications = async (p = 1) => {
-    try {
-      const res = await API.get(`/applications/my?page=${p}&limit=10`);
-      setApplications(res.data.applications || []);
-      setTotalPages(res.data.pages || 1);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const limit = 8;
 
   useEffect(() => {
-    fetchApplications(page);
+    setLoading(true);
+    API.get(`/applications/my?page=${page}&limit=${limit}`)
+      .then((res) => {
+        const data = res.data;
+        setApplications(data.applications || data.data || data);
+        setTotalPages(data.totalPages || data.pages || 1);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [page]);
-
-  if (loading) return <StudentLayout><Loader /></StudentLayout>;
 
   return (
     <StudentLayout>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
-        <Box>
-          <Typography variant="h4" fontWeight={800}>My Applications</Typography>
-          <Typography variant="body2" color="text.secondary">Track your internship applications</Typography>
-        </Box>
-        <Chip
-          icon={<Assignment />}
-          label={`${totalPages > 0 ? `${(page - 1) * 10 + 1}-${Math.min(page * 10, totalPages * 10)}` : "0"} Total`}
-          sx={{ bgcolor: "rgba(99,102,241,0.1)", color: "#6366F1", fontWeight: 600 }}
-        />
-      </Box>
+      <Box sx={{ p: { xs: 0, md: 2 } }}>
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
+          My Applications
+        </Typography>
 
-      {applications.length === 0 ? (
-        <Paper sx={{ p: 8, textAlign: "center", border: "1px solid #F1F5F9" }}>
-          <Assignment sx={{ fontSize: 64, color: "#CBD5E1", mb: 2 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No applications yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Start browsing internships and apply to your favorites
-          </Typography>
-        </Paper>
-      ) : (
-        <Paper sx={{ border: "1px solid #F1F5F9", overflow: "hidden" }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><b>Internship</b></TableCell>
-                  <TableCell><b>Company</b></TableCell>
-                  <TableCell><b>Status</b></TableCell>
-                  <TableCell><b>Applied Date</b></TableCell>
-                  <TableCell align="right"><b>Actions</b></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {applications.map((app) => (
-                  <TableRow key={app._id} sx={{ "&:hover": { bgcolor: "#F8FAFC" } }}>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
-                        {app.internship?.title || "N/A"}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Avatar sx={{ width: 28, height: 28, bgcolor: "#6366F1", fontSize: 12, fontWeight: 700 }}>
-                          {app.internship?.company?.companyName?.charAt(0) || "C"}
-                        </Avatar>
-                        <Typography variant="body2">
-                          {app.internship?.company?.companyName || "N/A"}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={statusColors[app.status]?.label || app.status}
-                        size="small"
-                        sx={{
-                          bgcolor: statusColors[app.status]?.bg || "#F1F5F9",
-                          color: statusColors[app.status]?.color || "#475569",
-                          fontWeight: 700,
-                          fontSize: 11,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(app.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric", month: "short", day: "numeric",
-                        })}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" sx={{ color: "#6366F1" }}>
-                        <Visibility fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {totalPages > 1 && (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
+        <Paper>
+          {loading ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Typography color="text.secondary">Loading...</Typography>
             </Box>
+          ) : applications.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 6 }}>
+              <Assignment sx={{ fontSize: 64, color: "text.secondary", mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                No applications yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Browse internships and start applying!
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Internship</TableCell>
+                      <TableCell>Company</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Applied Date</TableCell>
+                      <TableCell align="center">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {applications.map((app) => (
+                      <TableRow key={app._id} hover>
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                            <Avatar
+                              src={app.internship?.company?.logo || app.companyLogo}
+                              sx={{ width: 36, height: 36, bgcolor: "#6366F1", fontSize: 14 }}
+                            >
+                              {(app.internship?.company?.name || app.companyName || "C").charAt(0)}
+                            </Avatar>
+                            <Typography variant="body2" fontWeight={600}>
+                              {app.internship?.title || app.internshipTitle || "N/A"}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {app.internship?.company?.name || app.companyName || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={app.status}
+                            size="small"
+                            color={STATUS_COLORS[app.status] || "default"}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(app.createdAt || app.appliedDate).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate("/student/applications")}
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {totalPages > 1 && (
+                <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+                  <Pagination
+                    count={totalPages}
+                    page={page}
+                    onChange={(_, val) => setPage(val)}
+                    color="primary"
+                  />
+                </Box>
+              )}
+            </>
           )}
         </Paper>
-      )}
+      </Box>
     </StudentLayout>
   );
 }
-
-export default MyApplications;

@@ -2,18 +2,8 @@ import mongoose from "mongoose";
 
 const applicationSchema = new mongoose.Schema(
   {
-    internship: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Internship",
-      required: true,
-    },
-
-    student: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Student",
-      required: true,
-    },
-
+    student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
+    internship: { type: mongoose.Schema.Types.ObjectId, ref: "Internship", required: true },
     status: {
       type: String,
       enum: ["pending", "reviewed", "accepted", "rejected"],
@@ -22,5 +12,7 @@ const applicationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+applicationSchema.index({ student: 1, internship: 1 }, { unique: true });
 
 export default mongoose.model("Application", applicationSchema);

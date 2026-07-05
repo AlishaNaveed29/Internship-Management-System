@@ -1,18 +1,13 @@
-import express from "express";
-import {
-  getUsers,
-  getCompanies,
-  getAdminInternships,
-  getAdminApplications,
-} from "../controllers/adminController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
+import { Router } from "express";
+import { getUsers, getCompanies, getInternships, getApplications, getStats } from "../controllers/adminController.js";
+import { protect, authorize } from "../middleware/auth.js";
 
-const router = express.Router();
+const router = Router();
 
+router.get("/stats", protect, authorize("admin"), getStats);
 router.get("/users", protect, authorize("admin"), getUsers);
 router.get("/companies", protect, authorize("admin"), getCompanies);
-router.get("/internships", protect, authorize("admin"), getAdminInternships);
-router.get("/applications", protect, authorize("admin"), getAdminApplications);
+router.get("/internships", protect, authorize("admin"), getInternships);
+router.get("/applications", protect, authorize("admin"), getApplications);
 
 export default router;

@@ -1,21 +1,17 @@
-import express from "express";
+import { Router } from "express";
 import {
-  applyInternship,
-  myApplications,
+  apply,
+  getMyApplications,
   getCompanyApplications,
-  updateApplicationStatus,
-  getAllApplications,
+  updateStatus,
 } from "../controllers/applicationController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
-import { updateStatusRules } from "../middleware/validate.js";
+import { protect, authorize } from "../middleware/auth.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/my", protect, authorize("student"), myApplications);
+router.get("/my", protect, authorize("student"), getMyApplications);
 router.get("/company", protect, authorize("company"), getCompanyApplications);
-router.post("/:id/apply", protect, authorize("student"), applyInternship);
-router.put("/:id/status", protect, authorize("company", "admin"), updateStatusRules, updateApplicationStatus);
-router.get("/", protect, authorize("admin"), getAllApplications);
+router.post("/:id/apply", protect, authorize("student"), apply);
+router.put("/:id/status", protect, authorize("company"), updateStatus);
 
 export default router;

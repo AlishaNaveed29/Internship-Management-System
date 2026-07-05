@@ -1,23 +1,22 @@
-import express from "express";
+import { Router } from "express";
 import {
-  createInternship,
   getInternships,
-  getInternship,
   getMyInternships,
+  getInternship,
+  createInternship,
   updateInternship,
   deleteInternship,
 } from "../controllers/internshipController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { authorize } from "../middleware/roleMiddleware.js";
-import { createInternshipRules, updateInternshipRules } from "../middleware/validate.js";
+import { protect, authorize } from "../middleware/auth.js";
+import { internshipValidation } from "../middleware/validate.js";
 
-const router = express.Router();
+const router = Router();
 
 router.get("/", getInternships);
 router.get("/my", protect, authorize("company"), getMyInternships);
 router.get("/:id", getInternship);
-router.post("/", protect, authorize("company"), createInternshipRules, createInternship);
-router.put("/:id", protect, authorize("company"), updateInternshipRules, updateInternship);
+router.post("/", protect, authorize("company"), internshipValidation, createInternship);
+router.put("/:id", protect, authorize("company"), updateInternship);
 router.delete("/:id", protect, authorize("company"), deleteInternship);
 
 export default router;

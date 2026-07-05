@@ -1,19 +1,12 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-function PrivateRoute({ children, allowedRoles = [] }) {
-  const { user, isAuthenticated } = useAuth();
-  const location = useLocation();
+export default function PrivateRoute({ children, roles }) {
+  const { isAuthenticated, user, loading } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to={`/${user.role}/dashboard`} replace />;
-  }
+  if (loading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user?.role)) return <Navigate to={`/${user?.role}/dashboard`} replace />;
 
   return children;
 }
-
-export default PrivateRoute;

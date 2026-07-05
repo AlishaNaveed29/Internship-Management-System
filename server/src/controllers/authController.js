@@ -1,128 +1,51 @@
-import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import generateToken from "../utils/generateToken.js";
 
-// =========================
-// Health Check
-// =========================
-export const healthCheck = (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Authentication module is working.",
-  });
-};
+const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || "7d" });
 
-// =========================
-// Register User
-// =========================
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { fullName, email, password, role } = req.body;
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ message: "Email already registered" });
 
-    // Validate input
-    if (!fullName || !email || !password || !role) {
-      return res.status(400).json({
-        success: false,
-        message: "Please fill all required fields.",
-      });
-    }
-
-    // Check existing user
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already registered.",
-      });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
-    const user = await User.create({
-      fullName,
-      email,
-      password: hashedPassword,
-      role,
-    });
+    const user = await User.create({ fullName, email, password, role });
+    const token = generateToken(user._id);
 
     res.status(201).json({
-      success: true,
-      message: "Registration successful.",
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
+      token,
+      user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role },
     });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
-// =========================
-// Login User
-// =========================
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required.",
-      });
-    }
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
-    // Find user
-    const user = await User.findOne({ email });
+    const token = generateToken(user._id);
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password.",
-      });
-    }
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password.",
-      });
-    }
-
-    // Generate JWT Token
-    const token = generateToken(user._id, user.role);
-
-    res.status(200).json({
-      success: true,
-      message: "Login successful.",
+    res.json({
       token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
+      user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role },
     });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    next(err);
+  }
+};
 
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
+export const getMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    res.json({ user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role, avatar: user.avatar } });
+  } catch (err) {
+    next(err);
   }
 };

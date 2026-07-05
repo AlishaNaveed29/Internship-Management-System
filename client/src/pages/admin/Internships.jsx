@@ -1,146 +1,165 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Typography,
-  Paper,
-  Box,
-  Chip,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TableContainer,
-  Avatar,
-  TextField,
-  InputAdornment,
-  Pagination,
+  Box, Typography, Paper, Table, TableHead, TableRow, TableCell,
+  TableBody, TableContainer, Chip, Avatar, TextField, InputAdornment,
+  Pagination, CircularProgress
 } from "@mui/material";
 import { Search, Work } from "@mui/icons-material";
 import AdminLayout from "../../layouts/AdminLayout";
-import Loader from "../../components/common/Loader";
 import API from "../../services/api";
 
-function AdminInternships() {
+export default function AdminInternships() {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchInternships = async (p = 1) => {
-    try {
-      const res = await API.get(`/admin/internships?page=${p}&limit=10`);
-      setInternships(res.data.internships || []);
-      setTotalPages(res.data.pages || 1);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
+  const fetchInternships = () => {
+    setLoading(true);
+    API.get("/admin/internships", { params: { search, page, limit: 10 } })
+      .then(({ data }) => {
+        setInternships(data.internships || []);
+        setTotalPages(data.totalPages || 1);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchInternships(page);
+    fetchInternships();
   }, [page]);
 
-  const filtered = internships.filter((i) =>
-    i.title?.toLowerCase().includes(search.toLowerCase()) ||
-    i.company?.companyName?.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
-  if (loading) return <AdminLayout><Loader /></AdminLayout>;
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+  };
+
+  const statusColor = {
+    active: "#22C55E",
+    closed: "#EF4444",
+    draft: "#F59E0B",
+    filled: "#6366F1",
+  };
 
   return (
     <AdminLayout>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
+      <Box sx={{ mb: 4, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h4" fontWeight={800}>Internships</Typography>
-          <Typography variant="body2" color="text.secondary">View all internships on the platform</Typography>
+          <Typography variant="h4" fontWeight={700} sx={{ color: "#F1F5F9", mb: 1 }}>
+            Internships
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#64748B" }}>
+            Manage all internship listings
+          </Typography>
         </Box>
-          <TextField
-            size="small"
-            placeholder="Search internships..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          InputProps={{
-            startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
+        <TextField
+          placeholder="Search internships..."
+          value={search}
+          onChange={handleSearch}
+          size="small"
+          slotProps={{
+            input: {
+              startAdornment: <InputAdornment position="start"><Search sx={{ color: "#64748B" }} /></InputAdornment>,
+            },
           }}
-          sx={{ minWidth: 250 }}
+          sx={{
+            minWidth: 280,
+            "& .MuiOutlinedInput-root": {
+              bgcolor: "#13182B",
+              borderRadius: 3,
+              color: "#F1F5F9",
+              "& fieldset": { borderColor: "rgba(99,102,241,0.2)" },
+              "&:hover fieldset": { borderColor: "rgba(99,102,241,0.4)" },
+              "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+            },
+          }}
         />
       </Box>
 
-      {filtered.length === 0 ? (
-        <Paper sx={{ p: 8, textAlign: "center", border: "1px solid #F1F5F9" }}>
-          <Work sx={{ fontSize: 64, color: "#CBD5E1", mb: 2 }} />
-          <Typography variant="h6" color="text.secondary">No internships found</Typography>
-        </Paper>
-      ) : (
-        <Paper sx={{ border: "1px solid #F1F5F9", overflow: "hidden" }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><b>Title</b></TableCell>
-                  <TableCell><b>Company</b></TableCell>
-                  <TableCell><b>Location</b></TableCell>
-                  <TableCell><b>Duration</b></TableCell>
-                  <TableCell><b>Status</b></TableCell>
-                  <TableCell><b>Posted</b></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filtered.map((item) => (
-                  <TableRow key={item._id} sx={{ "&:hover": { bgcolor: "#F8FAFC" } }}>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>{item.title}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Avatar sx={{ width: 24, height: 24, bgcolor: "#6366F1", fontSize: 11, fontWeight: 700 }}>
-                          {item.company?.companyName?.charAt(0) || "C"}
-                        </Avatar>
-                        <Typography variant="body2">{item.company?.companyName || "N/A"}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">{item.location || "Remote"}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">{item.duration || "N/A"}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={item.status || "Active"}
-                        size="small"
-                        sx={{
-                          bgcolor: item.status === "closed" ? "#FEE2E2" : "#D1FAE5",
-                          color: item.status === "closed" ? "#DC2626" : "#059669",
-                          fontWeight: 700,
-                          fontSize: 11,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(item.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric", month: "short", day: "numeric",
-                        })}
-                      </Typography>
-                    </TableCell>
+      <Paper sx={{ borderRadius: 4, bgcolor: "#13182B", border: "1px solid rgba(99,102,241,0.1)", overflow: "hidden" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8 }}>
+            <CircularProgress sx={{ color: "#6366F1" }} />
+          </Box>
+        ) : internships.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <Work sx={{ fontSize: 48, color: "#64748B", mb: 2 }} />
+            <Typography variant="h6" sx={{ color: "#94A3B8", mb: 1 }}>No internships found</Typography>
+            <Typography variant="body2" sx={{ color: "#64748B" }}>
+              {search ? "Try a different search term" : "No internships have been posted yet"}
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Title</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Company</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Location</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Duration</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Status</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Posted Date</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {totalPages > 1 && (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
-            </Box>
-          )}
-        </Paper>
-      )}
+                </TableHead>
+                <TableBody>
+                  {internships.map((internship) => (
+                    <TableRow key={internship._id} sx={{ "&:hover": { bgcolor: "rgba(99,102,241,0.05)" } }}>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#F1F5F9" }}>
+                        <Typography variant="body2" fontWeight={600}>{internship.title}</Typography>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#F1F5F9" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Avatar sx={{ width: 30, height: 30, bgcolor: "#14B8A6", fontSize: 11, fontWeight: 700 }}>
+                            {(internship.company?.companyName || internship.company?.fullName || "C")?.charAt(0)}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={500}>
+                            {internship.company?.companyName || internship.company?.fullName || "N/A"}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>{internship.location || "-"}</TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>{internship.duration || "-"}</TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                        <Chip
+                          label={internship.status || "active"}
+                          size="small"
+                          sx={{
+                            textTransform: "capitalize",
+                            fontWeight: 600,
+                            bgcolor: `${statusColor[internship.status] || statusColor.active}26`,
+                            color: statusColor[internship.status] || statusColor.active,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>
+                        {internship.createdAt ? new Date(internship.createdAt).toLocaleDateString() : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {totalPages > 1 && (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, val) => setPage(val)}
+                  sx={{
+                    "& .MuiPaginationItem-root": { color: "#94A3B8", "&.Mui-selected": { bgcolor: "#6366F1", color: "#fff" } },
+                  }}
+                />
+              </Box>
+            )}
+          </>
+        )}
+      </Paper>
     </AdminLayout>
   );
 }
-
-export default AdminInternships;

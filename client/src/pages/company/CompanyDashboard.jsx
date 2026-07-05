@@ -1,164 +1,202 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Grid,
-  Paper,
-  Typography,
-  Box,
-  Chip,
+  Box, Typography, Paper, Grid, Card, CardContent, Chip, Table,
+  TableHead, TableRow, TableCell, TableBody, TableContainer, Avatar
 } from "@mui/material";
 import {
-  Work,
-  Assignment,
-  CheckCircle,
-  Cancel,
-  TrendingUp,
-} from "@mui/icons-material";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
+import { Work, People, HourglassEmpty, CheckCircle } from "@mui/icons-material";
 import CompanyLayout from "../../layouts/CompanyLayout";
+import API from "../../services/api";
 
-const statCards = [
-  { title: "Posted Internships", value: 6, icon: <Work />, color: "#6366F1", bg: "rgba(99,102,241,0.1)" },
-  { title: "Total Applications", value: 31, icon: <Assignment />, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
-  { title: "Accepted", value: 8, icon: <CheckCircle />, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
-  { title: "Rejected", value: 5, icon: <Cancel />, color: "#EF4444", bg: "rgba(239,68,68,0.1)" },
-];
+export default function CompanyDashboard() {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalInternships: 0,
+    totalApplicants: 0,
+    pendingReviews: 0,
+    accepted: 0,
+  });
+  const [chartData, setChartData] = useState([]);
+  const [recentApplicants, setRecentApplicants] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-const chartData = [
-  { month: "Jan", applications: 5, accepted: 2 },
-  { month: "Feb", applications: 8, accepted: 3 },
-  { month: "Mar", applications: 12, accepted: 4 },
-  { month: "Apr", applications: 7, accepted: 2 },
-  { month: "May", applications: 15, accepted: 5 },
-  { month: "Jun", applications: 10, accepted: 3 },
-];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [internshipsRes, applicationsRes] = await Promise.all([
+          API.get("/internships/my"),
+          API.get("/applications/company"),
+        ]);
 
-const recentApplicants = [
-  { name: "Alice Johnson", position: "Frontend Intern", status: "pending", date: "2 hours ago" },
-  { name: "Bob Smith", position: "Backend Intern", status: "reviewed", date: "1 day ago" },
-  { name: "Carol Williams", position: "UI/UX Intern", status: "accepted", date: "3 days ago" },
-];
+        const internships = internshipsRes.data;
+        const applications = applicationsRes.data;
 
-function CompanyDashboard() {
+        setStats({
+          totalInternships: internships.length,
+          totalApplicants: applications.length,
+          pendingReviews: applications.filter((a) => a.status === "Pending").length,
+          accepted: applications.filter((a) => a.status === "Accepted").length,
+        });
+
+        const chart = internships.map((internship) => {
+          const count = applications.filter((a) => a.internshipId?._id === internship._id || a.internshipId === internship._id).length;
+          return {
+            name: internship.title?.length > 15 ? internship.title.slice(0, 15) + "..." : internship.title,
+            applicants: count,
+          };
+        });
+        setChartData(chart);
+
+        const recent = [...applications]
+          .sort((a, b) => new Date(b.createdAt || b.appliedDate) - new Date(a.createdAt || a.appliedDate))
+          .slice(0, 5);
+        setRecentApplicants(recent);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const statCards = [
+    { label: "Total Internships", value: stats.totalInternships, icon: <Work />, color: "#6366F1" },
+    { label: "Total Applicants", value: stats.totalApplicants, icon: <People />, color: "#14B8A6" },
+    { label: "Pending Reviews", value: stats.pendingReviews, icon: <HourglassEmpty />, color: "#F59E0B" },
+    { label: "Accepted", value: stats.accepted, icon: <CheckCircle />, color: "#10B981" },
+  ];
+
   return (
     <CompanyLayout>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>
-        Company Dashboard
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Manage your internships and review applicants
-      </Typography>
+      <Box>
+        <Typography variant="h4" fontWeight="bold" mb={3} color="#E2E8F0">
+          Dashboard
+        </Typography>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {statCards.map((card) => (
-          <Grid item xs={12} sm={6} md={3} key={card.title}>
-            <Paper
-              sx={{
-                p: 3,
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                border: "1px solid #F1F5F9",
-              }}
-            >
-              <Box
-                sx={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  bgcolor: card.bg,
-                  color: card.color,
-                }}
-              >
-                {card.icon}
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                  {card.title}
+        <Grid container spacing={3} mb={4}>
+          {statCards.map((card) => (
+            <Grid item xs={12} sm={6} md={3} key={card.label}>
+              <Card sx={{ bgcolor: "#13182B", borderRadius: 3, border: "1px solid #1E293B" }}>
+                <CardContent>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="body2" color="#94A3B8">{card.label}</Typography>
+                      <Typography variant="h4" fontWeight="bold" color="#E2E8F0" mt={1}>
+                        {loading ? "..." : card.value}
+                      </Typography>
+                    </Box>
+                    <Avatar sx={{ bgcolor: card.color, width: 48, height: 48 }}>
+                      {card.icon}
+                    </Avatar>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={7}>
+            <Paper sx={{ bgcolor: "#13182B", borderRadius: 3, p: 3, border: "1px solid #1E293B" }}>
+              <Typography variant="h6" fontWeight="bold" color="#E2E8F0" mb={2}>
+                Applications per Internship
+              </Typography>
+              {loading ? (
+                <Typography color="#94A3B8">Loading chart...</Typography>
+              ) : chartData.length === 0 ? (
+                <Typography color="#94A3B8">No data available</Typography>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
+                    <XAxis dataKey="name" stroke="#94A3B8" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#94A3B8" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#13182B", border: "1px solid #1E293B", borderRadius: 8 }}
+                      labelStyle={{ color: "#E2E8F0" }}
+                    />
+                    <Bar dataKey="applicants" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </Paper>
+          </Grid>
+
+          <Grid item xs={12} md={5}>
+            <Paper sx={{ bgcolor: "#13182B", borderRadius: 3, border: "1px solid #1E293B" }}>
+              <Box p={2} borderBottom="1px solid #1E293B">
+                <Typography variant="h6" fontWeight="bold" color="#E2E8F0">
+                  Recent Applicants
                 </Typography>
-                <Typography variant="h4" fontWeight={800} sx={{ color: card.color }}>
-                  {card.value}
+              </Box>
+              {loading ? (
+                <Box p={2}><Typography color="#94A3B8">Loading...</Typography></Box>
+              ) : recentApplicants.length === 0 ? (
+                <Box p={2}><Typography color="#94A3B8">No applicants yet</Typography></Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ color: "#94A3B8", borderColor: "#1E293B" }}>Student</TableCell>
+                        <TableCell sx={{ color: "#94A3B8", borderColor: "#1E293B" }}>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {recentApplicants.map((app) => (
+                        <TableRow key={app._id}>
+                          <TableCell sx={{ borderColor: "#1E293B" }}>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Avatar sx={{ width: 32, height: 32, bgcolor: "#6366F1", fontSize: 14 }}>
+                                {app.studentId?.name?.charAt(0) || "S"}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body2" color="#E2E8F0">
+                                  {app.studentId?.name || "Unknown"}
+                                </Typography>
+                                <Typography variant="caption" color="#94A3B8">
+                                  {app.internshipId?.title || "N/A"}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell sx={{ borderColor: "#1E293B" }}>
+                            <Chip
+                              label={app.status}
+                              size="small"
+                              sx={{
+                                bgcolor: app.status === "Accepted" ? "#10B981" :
+                                         app.status === "Rejected" ? "#EF4444" :
+                                         app.status === "Reviewed" ? "#F59E0B" : "#6366F1",
+                                color: "#fff",
+                                fontWeight: 600,
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+              <Box p={2} textAlign="center" borderTop="1px solid #1E293B">
+                <Typography
+                  variant="body2"
+                  color="#6366F1"
+                  sx={{ cursor: "pointer" }}
+                  onClick={() => navigate("/company/applicants")}
+                >
+                  View All Applicants
                 </Typography>
               </Box>
             </Paper>
           </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, border: "1px solid #F1F5F9" }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
-              <Typography variant="h6" fontWeight={700}>Application Overview</Typography>
-              <Chip icon={<TrendingUp />} label="+18% this month" color="success" size="small" />
-            </Box>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
-                <YAxis stroke="#94A3B8" fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="applications" fill="#6366F1" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="accepted" fill="#10B981" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Paper>
         </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, border: "1px solid #F1F5F9" }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
-              Recent Applicants
-            </Typography>
-            {recentApplicants.map((app, i) => (
-              <Box key={i} sx={{ mb: 2.5, "&:last-child": { mb: 0 } }}>
-                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      bgcolor: "#6366F1",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {app.name.charAt(0)}
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" fontWeight={600}>{app.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      {app.position}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {app.date}
-                    </Typography>
-                  </Box>
-                </Box>
-                {i < recentApplicants.length - 1 && (
-                  <Box sx={{ borderBottom: "1px solid #F1F5F9", my: 2 }} />
-                )}
-              </Box>
-            ))}
-          </Paper>
-        </Grid>
-      </Grid>
+      </Box>
     </CompanyLayout>
   );
 }
-
-export default CompanyDashboard;

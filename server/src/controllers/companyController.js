@@ -1,67 +1,28 @@
 import Company from "../models/Company.js";
 
-export const getCompanyProfile = async (req, res) => {
+export const getProfile = async (req, res, next) => {
   try {
-    let company = await Company.findOne({ user: req.user._id }).populate("user", "-password");
-
+    let company = await Company.findOne({ userId: req.user._id });
     if (!company) {
-      company = await Company.create({ user: req.user._id, companyName: req.user.fullName || "My Company" });
-      company = await Company.findById(company._id).populate("user", "-password");
+      company = await Company.create({ userId: req.user._id, companyName: req.user.fullName, email: req.user.email });
     }
-
-    const data = {
-      ...company.toObject(),
-      fullName: company.user?.fullName || "",
-      email: company.user?.email || "",
-    };
-
-    res.status(200).json({ success: true, company: data });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({ company });
+  } catch (err) {
+    next(err);
   }
 };
 
-const allowedCompanyFields = [
-  "companyName", "website", "industry", "description",
-  "location", "phone", "size", "logo",
-];
-
-export const updateCompanyProfile = async (req, res) => {
+export const updateProfile = async (req, res, next) => {
   try {
+    const allowed = ["companyName", "email", "industry", "location", "website", "phone", "description", "size"];
     const updates = {};
-    allowedCompanyFields.forEach((field) => {
-      if (req.body[field] !== undefined) updates[field] = req.body[field];
-    });
-
-    const company = await Company.findOneAndUpdate(
-      { user: req.user._id },
-      { $set: updates },
-      { new: true, upsert: true, runValidators: true }
-    ).populate("user", "-password");
-
-    const data = {
-      ...company.toObject(),
-      fullName: company.user?.fullName || "",
-      email: company.user?.email || "",
-    };
-
-    res.status(200).json({ success: true, company: data });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const createCompany = async (req, res) => {
-  try {
-    const existing = await Company.findOne({ user: req.user._id });
-    if (existing) {
-      return res.status(400).json({ success: false, message: "Company profile already exists." });
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
-    const company = await Company.create({ user: req.user._id, ...req.body });
-
-    res.status(201).json({ success: true, message: "Company profile created.", company });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    let company = await Company.findOneAndUpdate({ userId: req.user._id }, updates, { new: true, upsert: true });
+    res.json({ company });
+  } catch (err) {
+    next(err);
   }
 };

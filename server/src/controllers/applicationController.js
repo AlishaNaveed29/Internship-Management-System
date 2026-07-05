@@ -3,121 +3,87 @@ import Internship from "../models/Internship.js";
 import Student from "../models/Student.js";
 import Company from "../models/Company.js";
 
-const studentPopulate = { path: "student", populate: { path: "user", select: "fullName email" } };
-const internshipPopulate = {
-  path: "internship",
-  populate: { path: "company", select: "companyName industry location", populate: { path: "user", select: "fullName email" } },
-};
-
-export const applyInternship = async (req, res) => {
+export const apply = async (req, res, next) => {
   try {
-    let student = await Student.findOne({ user: req.user._id });
-    if (!student) {
-      student = await Student.create({ user: req.user._id });
-    }
-
     const internship = await Internship.findById(req.params.id);
-    if (!internship) {
-      return res.status(404).json({ success: false, message: "Internship not found." });
-    }
+    if (!internship) return res.status(404).json({ message: "Internship not found" });
 
-    const existing = await Application.findOne({ internship: internship._id, student: student._id });
-    if (existing) {
-      return res.status(400).json({ success: false, message: "Already applied." });
-    }
-
-    const application = await Application.create({ internship: internship._id, student: student._id });
-    await Internship.findByIdAndUpdate(req.params.id, { $inc: { applicantCount: 1 } });
-
-    res.status(201).json({ success: true, message: "Application submitted.", application });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const myApplications = async (req, res) => {
-  try {
-    const student = await Student.findOne({ user: req.user._id });
+    let student = await Student.findOne({ userId: req.user._id });
     if (!student) {
-      return res.status(404).json({ success: false, message: "Student profile not found." });
+      student = await Student.create({ userId: req.user._id, fullName: req.user.fullName, email: req.user.email });
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const existing = await Application.findOne({ student: student._id, internship: internship._id });
+    if (existing) return res.status(400).json({ message: "Already applied" });
 
-    const [applications, total] = await Promise.all([
-      Application.find({ student: student._id })
-        .populate(internshipPopulate)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      Application.countDocuments({ student: student._id }),
-    ]);
-
-    res.status(200).json({ success: true, applications, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const application = await Application.create({ student: student._id, internship: internship._id });
+    res.status(201).json({ application });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const getCompanyApplications = async (req, res) => {
+export const getMyApplications = async (req, res, next) => {
   try {
-    const company = await Company.findOne({ user: req.user._id });
-    if (!company) {
-      return res.status(404).json({ success: false, message: "Company profile not found." });
-    }
+    const student = await Student.findOne({ userId: req.user._id });
+    if (!student) return res.json({ applications: [], total: 0, page: 1, pages: 0 });
 
-    const companyInternships = await Internship.find({ company: company._id }).select("_id");
-    const ids = companyInternships.map((i) => i._id);
+    const { page = 1, limit = 10 } = req.query;
+    const query = { student: student._id };
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const total = await Application.countDocuments(query);
+    const applications = await Application.find(query)
+      .populate({ path: "internship", populate: { path: "company", select: "companyName industry" } })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
 
-    const [applications, total] = await Promise.all([
-      Application.find({ internship: { $in: ids } })
-        .populate(studentPopulate)
-        .populate(internshipPopulate)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      Application.countDocuments({ internship: { $in: ids } }),
-    ]);
-
-    res.status(200).json({ success: true, applications, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({ applications, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const updateApplicationStatus = async (req, res) => {
+export const getCompanyApplications = async (req, res, next) => {
   try {
-    const application = await Application.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
-    );
+    const company = await require("../models/Company.js").default.findOne({ userId: req.user._id });
+    if (!company) return res.status(404).json({ message: "Company profile not found" });
 
-    if (!application) {
-      return res.status(404).json({ success: false, message: "Application not found." });
-    }
+    const internships = await Internship.find({ company: company._id }).select("_id");
+    const ids = internships.map((i) => i._id);
 
-    res.status(200).json({ success: true, message: "Status updated.", application });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const { page = 1, limit = 10 } = req.query;
+    const query = { internship: { $in: ids } };
+
+    const total = await Application.countDocuments(query);
+    const applications = await Application.find(query)
+      .populate("student", "fullName email")
+      .populate("internship", "title")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    res.json({ applications, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
   }
 };
 
-export const getAllApplications = async (req, res) => {
+export const updateStatus = async (req, res, next) => {
   try {
-    const applications = await Application.find()
-      .populate(studentPopulate)
-      .populate(internshipPopulate)
-      .sort({ createdAt: -1 });
+    const company = await Company.findOne({ userId: req.user._id });
 
-    res.status(200).json({ success: true, applications });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const application = await Application.findById(req.params.id);
+    if (!application) return res.status(404).json({ message: "Application not found" });
+
+    if (!["pending", "reviewed", "accepted", "rejected"].includes(req.body.status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    application.status = req.body.status;
+    await application.save();
+    res.json({ application });
+  } catch (err) {
+    next(err);
   }
 };

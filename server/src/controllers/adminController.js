@@ -3,86 +3,97 @@ import Company from "../models/Company.js";
 import Internship from "../models/Internship.js";
 import Application from "../models/Application.js";
 
-export const getUsers = async (req, res) => {
+export const getUsers = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+    const { page = 1, limit = 10, search } = req.query;
+    const query = {};
+    if (search) query.fullName = { $regex: search, $options: "i" };
 
-    const [users, total] = await Promise.all([
-      User.find().select("-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    res.json({ users, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCompanies = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+    const query = {};
+    if (search) query.companyName = { $regex: search, $options: "i" };
+
+    const total = await Company.countDocuments(query);
+    const companies = await Company.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    res.json({ companies, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getInternships = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+    const query = {};
+    if (search) query.title = { $regex: search, $options: "i" };
+
+    const total = await Internship.countDocuments(query);
+    const internships = await Internship.find(query)
+      .populate("company", "companyName industry")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    res.json({ internships, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getApplications = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    const query = {};
+    if (status && status !== "all") query.status = status;
+
+    const total = await Application.countDocuments(query);
+    const applications = await Application.find(query)
+      .populate("student", "fullName email")
+      .populate({ path: "internship", populate: { path: "company", select: "companyName" } })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    res.json({ applications, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getStats = async (req, res, next) => {
+  try {
+    const [totalUsers, totalCompanies, totalInternships, totalApplications] = await Promise.all([
       User.countDocuments(),
-    ]);
-
-    res.status(200).json({ success: true, users, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getCompanies = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
-    const [companies, total] = await Promise.all([
-      Company.find().populate("user", "fullName email").sort({ createdAt: -1 }).skip(skip).limit(limit),
       Company.countDocuments(),
-    ]);
-
-    res.status(200).json({ success: true, companies, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getAdminInternships = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
-    const [internships, total] = await Promise.all([
-      Internship.find()
-        .populate({
-          path: "company",
-          select: "companyName industry location",
-          populate: { path: "user", select: "fullName email" },
-        })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
       Internship.countDocuments(),
-    ]);
-
-    res.status(200).json({ success: true, internships, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getAdminApplications = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
-    const [applications, total] = await Promise.all([
-      Application.find()
-        .populate({ path: "student", populate: { path: "user", select: "fullName email" } })
-        .populate({
-          path: "internship",
-          populate: { path: "company", select: "companyName" },
-        })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
       Application.countDocuments(),
     ]);
 
-    res.status(200).json({ success: true, applications, total, page, pages: Math.ceil(total / limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(5);
+
+    res.json({
+      stats: { totalUsers, totalCompanies, totalInternships, totalApplications },
+      recentUsers,
+    });
+  } catch (err) {
+    next(err);
   }
 };

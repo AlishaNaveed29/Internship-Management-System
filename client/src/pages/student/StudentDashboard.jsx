@@ -1,198 +1,199 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Grid,
-  Paper,
-  Typography,
-  Box,
-  Chip,
-  Stack,
-  LinearProgress,
+  Box, Typography, Paper, Grid, Card, CardContent, Chip, Table,
+  TableHead, TableRow, TableCell, TableBody, TableContainer, Avatar
 } from "@mui/material";
 import {
-  Work,
-  Assignment,
-  CheckCircle,
-  Cancel,
-  TrendingUp,
-  School,
-  ArrowUpward,
-  AccessTime,
+  Assignment, HourglassEmpty, CheckCircle, Cancel
 } from "@mui/icons-material";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import StudentLayout from "../../layouts/StudentLayout";
+import { useAuth } from "../../context/AuthContext";
 import API from "../../services/api";
 
-const chartData = [
-  { month: "Jan", applications: 1, interviews: 0 },
-  { month: "Feb", applications: 2, interviews: 1 },
-  { month: "Mar", applications: 3, interviews: 1 },
-  { month: "Apr", applications: 5, interviews: 2 },
-  { month: "May", applications: 4, interviews: 3 },
-  { month: "Jun", applications: 6, interviews: 3 },
+const statCards = [
+  { label: "Total Applications", icon: <Assignment />, color: "#6366F1", bg: "rgba(99,102,241,0.15)" },
+  { label: "Pending", icon: <HourglassEmpty />, color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
+  { label: "Accepted", icon: <CheckCircle />, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+  { label: "Rejected", icon: <Cancel />, color: "#EF4444", bg: "rgba(239,68,68,0.15)" },
 ];
 
-const recentActivity = [
-  { action: "Applied to Software Engineer Intern", company: "Google", date: "2 hours ago", type: "success" },
-  { action: "Application viewed by company", company: "Microsoft", date: "1 day ago", type: "info" },
-  { action: "Interview scheduled", company: "Amazon", date: "3 days ago", type: "warning" },
-];
+const STATUS_COLORS = {
+  pending: "warning", reviewed: "info", accepted: "success", rejected: "error",
+};
 
-const defaultStats = [
-  { title: "Available", value: 25, icon: <Work />, color: "#6366F1", bg: "rgba(99,102,241,0.1)", change: "+5", trend: "up" },
-  { title: "Applied", value: 4, icon: <Assignment />, color: "#F59E0B", bg: "rgba(245,158,11,0.1)", change: "+2", trend: "up" },
-  { title: "Accepted", value: 1, icon: <CheckCircle />, color: "#10B981", bg: "rgba(16,185,129,0.1)", change: "0", trend: "neutral" },
-  { title: "Rejected", value: 1, icon: <Cancel />, color: "#EF4444", bg: "rgba(239,68,68,0.1)", change: "+1", trend: "up" },
-];
+const PIE_COLORS = ["#6366F1", "#F59E0B", "#10B981", "#EF4444"];
 
-function StudentDashboard() {
-  const [stats, setStats] = useState(defaultStats);
-
-  const fetchStats = async () => {
-    try {
-      const res = await API.get("/students/dashboard-stats");
-      if (res.data) {
-        setStats((prev) =>
-          prev.map((s, i) => ({
-            ...s,
-            value: res.data[["internships", "applied", "accepted", "rejected"][i]] || s.value,
-          }))
-        );
-      }
-    } catch {
-      console.log("Using default stats");
-    }
-  };
+export default function StudentDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
+    API.get("/applications/my")
+      .then((res) => setApplications(res.data.applications || res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  const stats = {
+    total: applications.length,
+    pending: applications.filter((a) => a.status === "pending").length,
+    accepted: applications.filter((a) => a.status === "accepted").length,
+    rejected: applications.filter((a) => a.status === "rejected").length,
+  };
+
+  const pieData = [
+    { name: "Pending", value: stats.pending },
+    { name: "Accepted", value: stats.accepted },
+    { name: "Rejected", value: stats.rejected },
+  ].filter((d) => d.value > 0);
+
+  const recentApps = applications.slice(0, 5);
 
   return (
     <StudentLayout>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
-        <Box>
-          <Typography variant="h5" fontWeight={800}>
-            Student Dashboard
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Welcome back! Here's your internship overview.
-          </Typography>
-        </Box>
-        <Chip icon={<School />} label="Your Profile" color="primary" variant="outlined" size="small" />
-      </Box>
+      <Box sx={{ p: { xs: 0, md: 2 } }}>
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
+          Welcome back, {user?.fullName?.split(" ")[0] || "Student"}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+          Here&apos;s an overview of your internship applications
+        </Typography>
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {stats.map((card) => (
-          <Grid item xs={6} md={3} key={card.title}>
-            <Paper
-              sx={{
-                p: 2.5,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                border: "1px solid #F1F5F9",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    bgcolor: card.bg,
-                    color: card.color,
-                  }}
-                >
-                  {card.icon}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {[
+            { label: "Total Applications", value: stats.total, icon: <Assignment />, color: "#6366F1", bg: "rgba(99,102,241,0.15)" },
+            { label: "Pending", value: stats.pending, icon: <HourglassEmpty />, color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
+            { label: "Accepted", value: stats.accepted, icon: <CheckCircle />, color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+            { label: "Rejected", value: stats.rejected, icon: <Cancel />, color: "#EF4444", bg: "rgba(239,68,68,0.15)" },
+          ].map((card) => (
+            <Grid item xs={12} sm={6} md={3} key={card.label}>
+              <Card sx={{
+                background: `linear-gradient(135deg, ${card.bg} 0%, ${card.bg}88 100%)`,
+                border: `1px solid ${card.color}33`,
+                position: "relative",
+                overflow: "hidden",
+              }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <Box>
+                      <Typography variant="h3" fontWeight={800} sx={{ color: card.color, mb: 0.5 }}>
+                        {loading ? "..." : card.value}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        {card.label}
+                      </Typography>
+                    </Box>
+                    <Avatar sx={{ bgcolor: card.color, width: 48, height: 48, opacity: 0.9 }}>
+                      {card.icon}
+                    </Avatar>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={7}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+                Recent Applications
+              </Typography>
+              {loading ? (
+                <Typography color="text.secondary">Loading...</Typography>
+              ) : recentApps.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <Assignment sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
+                  <Typography color="text.secondary">No applications yet</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    {card.title}
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800} sx={{ color: card.color, lineHeight: 1.2 }}>
-                    {card.value}
-                  </Typography>
-                </Box>
-              </Box>
-              {card.trend === "up" && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.3 }}>
-                  <ArrowUpward sx={{ fontSize: 14, color: "#10B981" }} />
-                  <Typography variant="caption" fontWeight={700} sx={{ color: "#10B981" }}>
-                    {card.change}
-                  </Typography>
-                </Box>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Internship</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Date</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {recentApps.map((app) => (
+                        <TableRow key={app._id} hover sx={{ cursor: "pointer" }} onClick={() => navigate("/student/applications")}>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>
+                              {app.internship?.title || app.internshipTitle || "N/A"}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={app.status}
+                              size="small"
+                              color={STATUS_COLORS[app.status] || "default"}
+                              variant="outlined"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {new Date(app.createdAt || app.appliedDate).toLocaleDateString()}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               )}
             </Paper>
           </Grid>
-        ))}
-      </Grid>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 2.5, border: "1px solid #F1F5F9" }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight={700}>
-                Application Trends
+          <Grid item xs={12} md={5}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+                Application Breakdown
               </Typography>
-              <Chip icon={<TrendingUp />} label="+12% this month" color="success" size="small" />
-            </Box>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="applications" stroke="#6366F1" strokeWidth={2.5} dot={{ fill: "#6366F1", r: 4 }} />
-                <Line type="monotone" dataKey="interviews" stroke="#10B981" strokeWidth={2.5} dot={{ fill: "#10B981", r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2.5, border: "1px solid #F1F5F9" }}>
-            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2.5 }}>
-              Recent Activity
-            </Typography>
-            <Stack spacing={0}>
-              {recentActivity.map((item, i) => (
-                <Box key={i}>
-                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, py: 1.5 }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: item.type === "success" ? "rgba(16,185,129,0.1)" : item.type === "info" ? "rgba(99,102,241,0.1)" : "rgba(245,158,11,0.1)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <School sx={{ fontSize: 16, color: item.type === "success" ? "#10B981" : item.type === "info" ? "#6366F1" : "#F59E0B" }} />
-                    </Box>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap>
-                        {item.action}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {item.company} &bull; {item.date}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  {i < recentActivity.length - 1 && <Box sx={{ borderBottom: "1px solid #F1F5F9" }} />}
+              {pieData.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <Typography color="text.secondary">No data to display</Typography>
                 </Box>
-              ))}
-            </Stack>
-          </Paper>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {pieData.map((_, idx) => (
+                          <Cell key={idx} fill={PIE_COLORS[idx]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <Box sx={{ display: "flex", justifyContent: "center", gap: 2, flexWrap: "wrap", mt: 1 }}>
+                    {pieData.map((item, idx) => (
+                      <Box key={item.name} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: PIE_COLORS[idx] }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {item.name} ({item.value})
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </>
+              )}
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </StudentLayout>
   );
 }
-
-export default StudentDashboard;

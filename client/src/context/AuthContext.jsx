@@ -1,40 +1,51 @@
-/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import API from "../services/api";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")));
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [loading, setLoading] = useState(true);
 
-  const login = useCallback((token, userData) => {
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      API.get("/auth/me")
+        .then((res) => {
+          setUser(res.data.user);
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        })
+        .catch(() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setUser(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const login = (token, userData) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
-  }, []);
+  };
 
-  const logout = useCallback(() => {
-    localStorage.clear();
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
-  }, []);
-
-  const isAuthenticated = !!user;
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        isAuthenticated,
-        isStudent: user?.role === "student",
-        isCompany: user?.role === "company",
-        isAdmin: user?.role === "admin",
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated: !!user, isStudent: user?.role === "student", isCompany: user?.role === "company", isAdmin: user?.role === "admin" }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => useContext(AuthContext);
-

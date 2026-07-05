@@ -1,19 +1,18 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   AppBar,
   Toolbar,
-  Typography,
   Button,
   Box,
+  Typography,
   Container,
   IconButton,
   Drawer,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
-  useMediaQuery,
-  useTheme,
   Avatar,
   Menu,
   MenuItem,
@@ -22,23 +21,15 @@ import {
 import {
   Menu as MenuIcon,
   Work,
+  Logout,
   Dashboard,
   Person,
-  Logout,
 } from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
 
-const navLinks = [
-  { title: "Home", path: "/" },
-  { title: "Find Internships", path: "/student/internships" },
-  { title: "For Companies", path: "/company/dashboard" },
-];
-
-function Navbar() {
-  const { user, logout } = useAuth();
+export default function Navbar() {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -47,185 +38,145 @@ function Navbar() {
     navigate("/");
   };
 
-  const getDashboardPath = () => {
-    if (!user) return "/login";
-    if (user.role === "student") return "/student/dashboard";
-    if (user.role === "company") return "/company/dashboard";
-    return "/admin/dashboard";
-  };
+  const menuItems = [
+    { label: "Home", path: "/" },
+    { label: "Browse Internships", path: "/internships" },
+  ];
+
+  const dashboardMap = { student: "/student/dashboard", company: "/company/dashboard", admin: "/admin/dashboard" };
 
   return (
     <>
-      <AppBar
-        position="fixed"
-        sx={{
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(99,102,241,0.1)",
-        }}
-      >
+      <AppBar position="fixed" elevation={0}>
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ height: 70 }}>
+          <Toolbar disableGutters sx={{ height: 72 }}>
             <Work sx={{ color: "#6366F1", mr: 1, fontSize: 28 }} />
             <Typography
               variant="h5"
+              fontWeight={800}
               sx={{
-                fontWeight: 800,
-                background: "linear-gradient(135deg, #6366F1, #818CF8)",
+                background: "linear-gradient(135deg, #6366F1, #A78BFA)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                mr: "auto",
+                cursor: "pointer",
+                mr: 4,
               }}
+              onClick={() => navigate("/")}
             >
               InternHub
             </Typography>
 
-            {isMobile ? (
-              <IconButton onClick={() => setMobileOpen(true)} sx={{ color: "#1E293B" }}>
+            <Box sx={{ display: { xs: "none", md: "flex" }, gap: 1, flex: 1 }}>
+              {menuItems.map((item) => (
+                <Button
+                  key={item.label}
+                  component={RouterLink}
+                  to={item.path}
+                  sx={{ color: "#94A3B8", "&:hover": { color: "#fff" } }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Dashboard />}
+                    onClick={() => navigate(dashboardMap[user?.role] || "/")}
+                    sx={{ display: { xs: "none", md: "flex" } }}
+                  >
+                    Dashboard
+                  </Button>
+                  <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Avatar sx={{ width: 36, height: 36, bgcolor: "#6366F1", fontSize: 14, fontWeight: 700 }}>
+                      {user?.fullName?.charAt(0)}
+                    </Avatar>
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={!!anchorEl}
+                    onClose={() => setAnchorEl(null)}
+                    transformOrigin={{ horizontal: "right", vertical: "top" }}
+                    anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+                    PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 3 } }}
+                  >
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Typography variant="body2" fontWeight={700}>{user?.fullName}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: "capitalize" }}>{user?.role}</Typography>
+                    </Box>
+                    <Divider />
+                    <MenuItem onClick={() => { setAnchorEl(null); navigate(dashboardMap[user?.role]); }}>
+                      <Dashboard fontSize="small" sx={{ mr: 1.5 }} /> Dashboard
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout}>
+                      <Logout fontSize="small" sx={{ mr: 1.5 }} /> Logout
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <>
+                  <Button variant="outlined" size="small" onClick={() => navigate("/login")}>Sign In</Button>
+                  <Button variant="contained" size="small" onClick={() => navigate("/register")}>Get Started</Button>
+                </>
+              )}
+              <IconButton sx={{ display: { md: "none" }, color: "#fff" }} onClick={() => setMobileOpen(true)}>
                 <MenuIcon />
               </IconButton>
-            ) : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {navLinks.map((link) => (
-                  <Button
-                    key={link.title}
-                    component={Link}
-                    to={link.path}
-                    sx={{
-                      color: "#475569",
-                      fontWeight: 500,
-                      px: 2,
-                      "&:hover": { color: "#6366F1", background: "rgba(99,102,241,0.08)" },
-                    }}
-                  >
-                    {link.title}
-                  </Button>
-                ))}
-
-                {user ? (
-                  <>
-                    <Button
-                      component={Link}
-                      to={getDashboardPath()}
-                      variant="outlined"
-                      startIcon={<Dashboard />}
-                      sx={{ ml: 2, borderColor: "#6366F1", color: "#6366F1" }}
-                    >
-                      Dashboard
-                    </Button>
-                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ ml: 1 }}>
-                      <Avatar
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          background: "linear-gradient(135deg, #6366F1, #818CF8)",
-                          fontSize: 14,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {user?.fullName?.charAt(0) || "U"}
-                      </Avatar>
-                    </IconButton>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={Boolean(anchorEl)}
-                      onClose={() => setAnchorEl(null)}
-                      transformOrigin={{ horizontal: "right", vertical: "top" }}
-                      anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-                      PaperProps={{
-                        sx: { mt: 1, borderRadius: 3, minWidth: 200, p: 1 },
-                      }}
-                    >
-                      <Box sx={{ px: 2, py: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={700}>
-                          {user.fullName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {user.email}
-                        </Typography>
-                      </Box>
-                      <Divider sx={{ my: 1 }} />
-                      <MenuItem onClick={() => { setAnchorEl(null); navigate(getDashboardPath()); }}>
-                        <Dashboard sx={{ mr: 1.5, fontSize: 20 }} /> Dashboard
-                      </MenuItem>
-                      <MenuItem onClick={() => { setAnchorEl(null); navigate(`/${user.role}/profile`); }}>
-                        <Person sx={{ mr: 1.5, fontSize: 20 }} /> Profile
-                      </MenuItem>
-                      <Divider sx={{ my: 1 }} />
-                      <MenuItem onClick={handleLogout}>
-                        <Logout sx={{ mr: 1.5, fontSize: 20 }} /> Logout
-                      </MenuItem>
-                    </Menu>
-                  </>
-                ) : (
-                  <Box sx={{ display: "flex", gap: 1, ml: 3 }}>
-                    <Button component={Link} to="/login" variant="outlined" sx={{ borderColor: "#6366F1", color: "#6366F1" }}>
-                      Login
-                    </Button>
-                    <Button component={Link} to="/register" variant="contained">
-                      Get Started
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            )}
+            </Box>
           </Toolbar>
         </Container>
       </AppBar>
 
-      <Drawer
-        anchor="right"
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        PaperProps={{ sx: { width: 280, p: 2 } }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", mb: 3, px: 1 }}>
-          <Work sx={{ color: "#6366F1", mr: 1 }} />
-          <Typography variant="h6" fontWeight={800} sx={{ color: "#6366F1" }}>
-            InternHub
-          </Typography>
+      <Drawer anchor="right" open={mobileOpen} onClose={() => setMobileOpen(false)}>
+        <Box sx={{ width: 280, pt: 2 }}>
+          <Box sx={{ px: 2, mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
+            <Work sx={{ color: "#6366F1" }} />
+            <Typography variant="h6" fontWeight={800} sx={{ background: "linear-gradient(135deg, #6366F1, #A78BFA)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>InternHub</Typography>
+          </Box>
+          <List>
+            {menuItems.map((item) => (
+              <ListItem key={item.label} disablePadding>
+                <ListItemButton onClick={() => { navigate(item.path); setMobileOpen(false); }}>
+                  <ListItemText primary={item.label} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+            <Divider sx={{ my: 1 }} />
+            {isAuthenticated ? (
+              <>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => { navigate(dashboardMap[user?.role]); setMobileOpen(false); }}>
+                    <Dashboard sx={{ mr: 1.5 }} /> <ListItemText primary="Dashboard" />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleLogout}>
+                    <Logout sx={{ mr: 1.5 }} /> <ListItemText primary="Logout" />
+                  </ListItemButton>
+                </ListItem>
+              </>
+            ) : (
+              <>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => { navigate("/login"); setMobileOpen(false); }}>
+                    <ListItemText primary="Sign In" />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => { navigate("/register"); setMobileOpen(false); }}>
+                    <ListItemText primary="Get Started" />
+                  </ListItemButton>
+                </ListItem>
+              </>
+            )}
+          </List>
         </Box>
-        <List>
-          {navLinks.map((link) => (
-            <ListItemButton
-              key={link.title}
-              component={Link}
-              to={link.path}
-              onClick={() => setMobileOpen(false)}
-              sx={{ borderRadius: 2, mb: 0.5 }}
-            >
-              <ListItemText primary={link.title} />
-            </ListItemButton>
-          ))}
-          <Divider sx={{ my: 2 }} />
-          {user ? (
-            <>
-              <ListItemButton component={Link} to={getDashboardPath()} onClick={() => setMobileOpen(false)} sx={{ borderRadius: 2 }}>
-                <ListItemText primary="Dashboard" />
-              </ListItemButton>
-              <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2, color: "#EF4444" }}>
-                <ListItemText primary="Logout" />
-              </ListItemButton>
-            </>
-          ) : (
-            <>
-              <ListItemButton component={Link} to="/login" onClick={() => setMobileOpen(false)} sx={{ borderRadius: 2 }}>
-                <ListItemText primary="Login" />
-              </ListItemButton>
-              <ListItemButton
-                component={Link}
-                to="/register"
-                onClick={() => setMobileOpen(false)}
-                sx={{ borderRadius: 2, bgcolor: "#6366F1", color: "#fff", "&:hover": { bgcolor: "#4F46E5" } }}
-              >
-                <ListItemText primary="Get Started" />
-              </ListItemButton>
-            </>
-          )}
-        </List>
       </Drawer>
+      <Toolbar sx={{ height: 72 }} />
     </>
   );
 }
-
-export default Navbar;

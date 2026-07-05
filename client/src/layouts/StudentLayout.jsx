@@ -1,12 +1,23 @@
 import DashboardLayout from "./DashboardLayout";
-import { studentMenus } from "../components/student/StudentSidebar";
+import {
+  Dashboard,
+  Work,
+  Assignment,
+  Person,
+  Search,
+} from "@mui/icons-material";
 
-function StudentLayout({ children }) {
+const sidebarItems = [
+  { label: "Dashboard", path: "/student/dashboard", icon: <Dashboard /> },
+  { label: "Browse Internships", path: "/student/browse", icon: <Search /> },
+  { label: "My Applications", path: "/student/applications", icon: <Assignment /> },
+  { label: "My Profile", path: "/student/profile", icon: <Person /> },
+];
+
+export default function StudentLayout({ children }) {
   return (
-    <DashboardLayout basePath="student" menus={studentMenus}>
+    <DashboardLayout title="Student Dashboard" sidebarItems={sidebarItems} roleColor="#6366F1">
       {children}
     </DashboardLayout>
   );
 }
-
-export default StudentLayout;

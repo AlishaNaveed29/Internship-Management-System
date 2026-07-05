@@ -1,473 +1,419 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
-  Box,
-  Button,
-  Container,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Avatar,
-  Stack,
-  Chip,
-  Divider,
+  Box, Typography, Button, Card, CardContent, Grid, Avatar, Chip, Container
 } from "@mui/material";
-import { Link } from "react-router-dom";
 import {
-  Work,
-  School,
-  TrendingUp,
-  Security,
-  AutoAwesome,
-  Groups,
-  ArrowForward,
-  CheckCircle,
-  PlayArrow,
-  Search,
-  Send,
-  Celebration,
-  Business,
-  People,
-  Speed,
-  Verified,
-  BarChart,
-  PersonAdd,
+  School, Business, Search, HowToReg, Work, Star, ChevronRight, ArrowForward
 } from "@mui/icons-material";
-import { useAuth } from "../../context/AuthContext";
+import API from "../../services/api";
 
-const features = [
-  {
-    icon: <Search sx={{ fontSize: 28 }} />,
-    title: "Smart Discovery",
-    desc: "AI-powered search filters internships by skills, location, duration, and industry preferences.",
-    color: "#6366F1",
-  },
-  {
-    icon: <Send sx={{ fontSize: 28 }} />,
-    title: "One-Click Apply",
-    desc: "Apply to multiple positions instantly with your pre-filled profile and portfolio links.",
-    color: "#10B981",
-  },
-  {
-    icon: <BarChart sx={{ fontSize: 28 }} />,
-    title: "Real-Time Tracking",
-    desc: "Monitor application status, interview invites, and offers from a single dashboard.",
-    color: "#F59E0B",
-  },
-  {
-    icon: <AutoAwesome sx={{ fontSize: 28 }} />,
-    title: "Smart Matching",
-    desc: "Our algorithm recommends the best-fit internships based on your unique skill profile.",
-    color: "#8B5CF6",
-  },
-  {
-    icon: <Verified sx={{ fontSize: 28 }} />,
-    title: "Verified Companies",
-    desc: "Every company is vetted to ensure legitimate, high-quality internship opportunities.",
-    color: "#EC4899",
-  },
-  {
-    icon: <Speed sx={{ fontSize: 28 }} />,
-    title: "Fast Response",
-    desc: "Get responses within 48 hours on average with our streamlined communication system.",
-    color: "#14B8A6",
-  },
-];
+const fadeInUp = {
+  initial: { opacity: 0, y: 60 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-100px" },
+  transition: { duration: 0.6, ease: "easeOut" },
+};
 
-const stats = [
-  { value: "500+", label: "Active Internships", sub: "across 20+ industries" },
-  { value: "2,000+", label: "Students Placed", sub: "in top companies" },
-  { value: "150+", label: "Partner Companies", sub: "from startups to Fortune 500" },
-  { value: "95%", label: "Success Rate", sub: "within 3 months" },
-];
+const stagger = {
+  initial: {},
+  whileInView: { transition: { staggerChildren: 0.15 } },
+  viewport: { once: true },
+};
 
-const howItWorks = [
-  { step: "01", title: "Create Your Profile", desc: "Sign up and build a comprehensive profile highlighting your skills, education, and experience.", icon: <PersonAdd />, color: "#6366F1" },
-  { step: "02", title: "Discover Opportunities", desc: "Browse or get matched with internships that fit your career goals and preferences.", icon: <Search />, color: "#10B981" },
-  { step: "03", title: "Apply Instantly", desc: "Submit applications with one click and track every step of the process.", icon: <Send />, color: "#F59E0B" },
-  { step: "04", title: "Launch Your Career", desc: "Land your dream internship and gain real-world experience with industry leaders.", icon: <Celebration />, color: "#8B5CF6" },
+const steps = [
+  {
+    title: "Sign Up & Create Profile",
+    description: "Register as a student or company and build your complete profile with skills, preferences, and requirements.",
+    icon: <HowToReg sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: "Browse & Match",
+    description: "Explore opportunities or candidates using our smart matching system tailored to your needs.",
+    icon: <Search sx={{ fontSize: 40 }} />,
+  },
+  {
+    title: "Apply & Hire",
+    description: "Apply with one click or receive applications. Connect and start your internship journey.",
+    icon: <Work sx={{ fontSize: 40 }} />,
+  },
 ];
 
 const testimonials = [
   {
     name: "Sarah Johnson",
-    role: "CS Student, Stanford University",
-    initials: "SJ",
-    text: "InternHub completely transformed my internship search. I applied to 12 positions in one day and heard back from 8 companies within a week. The platform's matching algorithm is incredibly accurate — it recommended opportunities I wouldn't have found on my own.",
-    stat: "Placed at Google",
-    color: "#6366F1",
+    role: "Computer Science Student",
+    avatar: "SJ",
+    text: "InternHub helped me land my dream internship at a top tech company. The platform made the entire process seamless and intuitive.",
+    rating: 5,
   },
   {
     name: "Michael Chen",
-    role: "HR Manager, TechCorp Inc.",
-    initials: "MC",
-    text: "As a hiring manager, InternHub has streamlined our entire recruitment pipeline. The quality of candidates is exceptional, and the dashboard gives us all the tools we need to evaluate, communicate, and onboard interns efficiently.",
-    stat: "Hired 15+ interns",
-    color: "#10B981",
+    role: "HR Manager, TechCorp",
+    avatar: "MC",
+    text: "We've hired some of our best interns through InternHub. The quality of candidates and ease of use is outstanding.",
+    rating: 5,
   },
   {
     name: "Emily Rodriguez",
-    role: "Business Student, NYU",
-    initials: "ER",
-    text: "What sets InternHub apart is the transparency. I could see exactly where my application stood at every stage, received timely updates, and the interview scheduling was seamless. I landed my dream consulting internship within two weeks.",
-    stat: "Placed at McKinsey",
-    color: "#8B5CF6",
+    role: "UX Design Intern",
+    avatar: "ER",
+    text: "The platform matched me with companies that perfectly fit my skills and career goals. Highly recommended for all students!",
+    rating: 5,
   },
 ];
 
-const companies = [
-  "TechCorp", "DataFlow", "CloudBase", "InnovateX", "GreenEnergy", "FinCore",
-];
+export default function Home() {
+  const navigate = useNavigate();
+  const [internships, setInternships] = useState([]);
+  const [counts, setCounts] = useState([0, 0, 0]);
 
-function Home() {
-  const { isAuthenticated } = useAuth();
+  useEffect(() => {
+    API.get("/internships?limit=6")
+      .then((res) => setInternships(res.data.internships || res.data || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const targets = [1000, 200, 500];
+    const duration = 2000;
+    const start = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCounts(targets.map((t) => Math.floor(t * eased)));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, []);
 
   return (
-    <>
-      {/* ─── HERO ─── */}
+    <Box sx={{ bgcolor: "#0B0F1E", overflow: "hidden" }}>
       <Box
         sx={{
-          background: "linear-gradient(135deg, #0B1120 0%, #1E293B 60%, #312E81 100%)",
-          color: "white",
-          pt: { xs: 6, md: 10 },
-          pb: { xs: 8, md: 14 },
           position: "relative",
-          overflow: "hidden",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #0B0F1E 0%, #1A1F35 50%, #0F1529 100%)",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: "-50%",
+            left: "-50%",
+            width: "200%",
+            height: "200%",
+            background:
+              "radial-gradient(circle at 30% 50%, rgba(99,102,241,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(236,72,153,0.1) 0%, transparent 50%)",
+            pointerEvents: "none",
+          },
         }}
       >
-        <Box sx={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <Box sx={{ position: "absolute", top: "-30%", right: "-10%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)" }} />
-          <Box sx={{ position: "absolute", bottom: "-20%", left: "-5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)" }} />
-          <Box sx={{ position: "absolute", top: "40%", left: "60%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)" }} />
-        </Box>
-
-        <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1 }}>
-          <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={7}>
-              <Chip
-                icon={<AutoAwesome sx={{ fontSize: 16 }} />}
-                label="Trusted by 150+ companies worldwide"
-                size="small"
-                sx={{
-                  bgcolor: "rgba(99,102,241,0.2)",
-                  color: "#A5B4FC",
-                  fontWeight: 600,
-                  fontSize: 12,
-                  mb: 3,
-                  px: 1,
-                  "& .MuiChip-icon": { color: "#A5B4FC" },
-                }}
-              />
-              <Typography
-                variant="h1"
-                sx={{
-                  fontSize: { xs: "2.25rem", sm: "3rem", md: "3.75rem" },
-                  lineHeight: 1.1,
-                  fontWeight: 900,
-                  mb: 2,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                The Smarter Way to{" "}
-                <Box component="span" sx={{ background: "linear-gradient(135deg, #A78BFA, #34D399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  Land Your Internship
-                </Box>
-              </Typography>
-              <Typography
-                sx={{
-                  color: "#94A3B8",
-                  fontSize: { xs: "1rem", md: "1.15rem" },
-                  lineHeight: 1.8,
-                  mb: 5,
-                  maxWidth: 560,
-                }}
-              >
-                InternHub connects ambitious students with top companies through intelligent matching, 
-                streamlined applications, and real-time tracking — all in one place.
-              </Typography>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button
-                  component={Link}
-                  to={isAuthenticated ? "/student/dashboard" : "/register"}
-                  variant="contained"
-                  size="large"
-                  endIcon={<ArrowForward />}
-                  sx={{
-                    py: 1.8,
-                    px: 4,
-                    fontSize: "1rem",
-                    background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
-                    "&:hover": { background: "linear-gradient(135deg, #4F46E5, #7C3AED)" },
-                  }}
-                >
-                  {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  startIcon={<PlayArrow />}
-                  sx={{
-                    py: 1.8,
-                    px: 4,
-                    fontSize: "1rem",
-                    color: "#fff",
-                    borderColor: "rgba(255,255,255,0.2)",
-                    "&:hover": { borderColor: "rgba(255,255,255,0.5)", bgcolor: "rgba(255,255,255,0.05)" },
-                  }}
-                >
-                  Watch Demo
-                </Button>
-              </Stack>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 3, mt: 5, flexWrap: "wrap" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <CheckCircle sx={{ fontSize: 16, color: "#34D399" }} />
-                  <Typography variant="caption" sx={{ color: "#94A3B8" }}>No credit card</Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <CheckCircle sx={{ fontSize: 16, color: "#34D399" }} />
-                  <Typography variant="caption" sx={{ color: "#94A3B8" }}>Free for students</Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <CheckCircle sx={{ fontSize: 16, color: "#34D399" }} />
-                  <Typography variant="caption" sx={{ color: "#94A3B8" }}>Verified companies</Typography>
-                </Box>
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} md={5} sx={{ display: { xs: "none", md: "flex" }, justifyContent: "center" }}>
-              <Box
-                sx={{
-                  width: 420,
-                  height: 420,
-                  borderRadius: "50%",
-                  background: "radial-gradient(circle at 30% 30%, rgba(99,102,241,0.25), transparent 60%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 180,
-                    height: 180,
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #6366F1, #A78BFA)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 30px 80px rgba(99,102,241,0.35)",
-                    animation: "pulse 3s ease-in-out infinite",
-                    "@keyframes pulse": { "0%, 100%": { transform: "scale(1)" }, "50%": { transform: "scale(1.05)" } },
-                  }}
-                >
-                  <Work sx={{ fontSize: 72, color: "#fff" }} />
-                </Box>
-                <Box sx={{ position: "absolute", top: "15%", right: "10%", bgcolor: "rgba(16,185,129,0.15)", backdropFilter: "blur(10px)", borderRadius: 3, px: 2, py: 1.5, border: "1px solid rgba(16,185,129,0.2)" }}>
-                  <Typography variant="caption" fontWeight={600} sx={{ color: "#34D399" }}>2,000+ Placed</Typography>
-                </Box>
-                <Box sx={{ position: "absolute", bottom: "20%", left: "8%", bgcolor: "rgba(99,102,241,0.15)", backdropFilter: "blur(10px)", borderRadius: 3, px: 2, py: 1.5, border: "1px solid rgba(99,102,241,0.2)" }}>
-                  <Typography variant="caption" fontWeight={600} sx={{ color: "#A5B4FC" }}>150+ Companies</Typography>
-                </Box>
-              </Box>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* ─── COMPANY BANNER ─── */}
-      <Box sx={{ bgcolor: "#fff", py: 5, borderBottom: "1px solid #F1F5F9" }}>
-        <Container maxWidth="xl">
-          <Typography variant="caption" align="center" sx={{ display: "block", color: "#94A3B8", fontWeight: 600, letterSpacing: 2, mb: 3, textTransform: "uppercase" }}>
-            Trusted by leading companies
-          </Typography>
-          <Grid container spacing={4} alignItems="center" justifyContent="center">
-            {companies.map((c) => (
-              <Grid item key={c}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, opacity: 0.5, "&:hover": { opacity: 0.8 } }}>
-                  <Business sx={{ fontSize: 24, color: "#64748B" }} />
-                  <Typography variant="h6" fontWeight={700} sx={{ color: "#1E293B", fontSize: "1.1rem" }}>{c}</Typography>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* ─── STATS ─── */}
-      <Box sx={{ bgcolor: "#F8FAFC", py: 7, borderBottom: "1px solid #F1F5F9" }}>
-        <Container maxWidth="xl">
-          <Grid container spacing={3}>
-            {stats.map((stat) => (
-              <Grid item xs={6} md={3} key={stat.label}>
-                <Box sx={{ textAlign: "center", px: 2 }}>
-                  <Typography
-                    variant="h3"
-                    sx={{ fontWeight: 900, fontSize: { xs: "2rem", md: "2.5rem" }, mb: 0.5, background: "linear-gradient(135deg, #6366F1, #8B5CF6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                  >
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="body2" fontWeight={700} sx={{ color: "#1E293B", mb: 0.25 }}>
-                    {stat.label}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "#94A3B8" }}>
-                    {stat.sub}
-                  </Typography>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* ─── HOW IT WORKS ─── */}
-      <Container maxWidth="xl" sx={{ py: { xs: 8, md: 12 } }}>
-        <Box sx={{ textAlign: "center", mb: 8 }}>
-          <Chip label="Simple Process" size="small" sx={{ bgcolor: "rgba(99,102,241,0.1)", color: "#6366F1", fontWeight: 600, mb: 2 }} />
-          <Typography variant="h2" sx={{ fontSize: { xs: "1.75rem", md: "2.5rem" }, mb: 1.5, fontWeight: 800 }}>
-            How It Works
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 520, mx: "auto", fontSize: "1.05rem" }}>
-            Four simple steps to launch your career with the perfect internship.
-          </Typography>
-        </Box>
-
-        <Grid container spacing={3}>
-          {howItWorks.map((item) => (
-            <Grid item xs={12} sm={6} md={3} key={item.step}>
-              <Box
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  bgcolor: "#fff",
-                  border: "1px solid #F1F5F9",
-                  height: "100%",
-                  transition: "all 0.3s ease",
-                  "&:hover": { transform: "translateY(-4px)", boxShadow: "0 12px 40px rgba(0,0,0,0.06)", borderColor: `${item.color}30` },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-                  <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      bgcolor: `${item.color}12`,
-                      color: item.color,
-                    }}
-                  >
-                    {item.icon}
-                  </Box>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: "#94A3B8", letterSpacing: 1 }}>{item.step}</Typography>
-                </Box>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1, fontSize: "1rem" }}>
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                  {item.desc}
-                </Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-
-      {/* ─── FEATURES ─── */}
-      <Box sx={{ bgcolor: "#fff", py: { xs: 8, md: 12 }, borderTop: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}>
-        <Container maxWidth="xl">
-          <Box sx={{ textAlign: "center", mb: 8 }}>
-            <Chip label="Platform Features" size="small" sx={{ bgcolor: "rgba(16,185,129,0.1)", color: "#10B981", fontWeight: 600, mb: 2 }} />
-            <Typography variant="h2" sx={{ fontSize: { xs: "1.75rem", md: "2.5rem" }, mb: 1.5, fontWeight: 800 }}>
-              Everything You Need to Succeed
+        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1, textAlign: "center", py: 8 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <Chip
+              label="Connecting Talent with Opportunity"
+              sx={{
+                mb: 3,
+                background: "rgba(99,102,241,0.15)",
+                color: "#818CF8",
+                fontWeight: 600,
+                px: 2,
+                py: 2.5,
+                fontSize: "0.9rem",
+                border: "1px solid rgba(99,102,241,0.2)",
+              }}
+            />
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: "2.5rem", md: "4.5rem" },
+                fontWeight: 800,
+                lineHeight: 1.1,
+                mb: 2,
+                background: "linear-gradient(135deg, #F1F5F9 0%, #818CF8 50%, #EC4899 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Your Gateway to<br />Amazing Internships
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 560, mx: "auto", fontSize: "1.05rem" }}>
-              A comprehensive platform designed to make the internship journey seamless from start to finish.
+            <Typography
+              variant="h6"
+              sx={{ color: "#94A3B8", maxWidth: 600, mx: "auto", mb: 5, lineHeight: 1.7, fontWeight: 400 }}
+            >
+              Discover curated internship opportunities, connect with leading companies, and launch your career with InternHub.
             </Typography>
-          </Box>
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate("/register")}
+                endIcon={<ArrowForward />}
+                sx={{ px: 4, py: 1.8, fontSize: "1rem" }}
+              >
+                Get Started
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate("/internships")}
+                endIcon={<ChevronRight />}
+                sx={{ px: 4, py: 1.8, fontSize: "1rem" }}
+              >
+                Browse Internships
+              </Button>
+            </Box>
+          </motion.div>
+        </Container>
+      </Box>
 
-          <Grid container spacing={3}>
-            {features.map((feature) => (
-              <Grid item xs={12} sm={6} md={4} key={feature.title}>
+      <Container maxWidth="lg" sx={{ py: 10 }}>
+        <motion.div {...fadeInUp}>
+          <Grid container spacing={4} justifyContent="center">
+            {[
+              { label: "Students", value: counts[0], suffix: "+", icon: <School /> },
+              { label: "Companies", value: counts[1], suffix: "+", icon: <Business /> },
+              { label: "Internships", value: counts[2], suffix: "+", icon: <Work /> },
+            ].map((stat) => (
+              <Grid item xs={12} sm={4} key={stat.label}>
                 <Card
                   sx={{
-                    p: 2.5,
-                    height: "100%",
-                    border: "1px solid #F1F5F9",
-                    "&:hover": { borderColor: `${feature.color}30` },
+                    textAlign: "center",
+                    py: 4,
+                    px: 3,
+                    background: "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(236,72,153,0.05) 100%)",
+                    border: "1px solid rgba(99,102,241,0.15)",
+                    "&:hover": { transform: "translateY(-4px)", borderColor: "rgba(99,102,241,0.3)" },
                   }}
                 >
-                  <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-                    <Box
-                      sx={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 2.5,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: `${feature.color}10`,
-                        color: feature.color,
-                        mb: 2,
-                      }}
-                    >
-                      {feature.icon}
-                    </Box>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1, fontSize: "1rem" }}>
-                      {feature.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                      {feature.desc}
-                    </Typography>
-                  </CardContent>
+                  <Box sx={{ color: "#6366F1", mb: 1 }}>{stat.icon}</Box>
+                  <Typography variant="h3" sx={{ fontWeight: 800, background: "linear-gradient(135deg, #6366F1, #EC4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    {stat.value}{stat.suffix}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                    {stat.label}
+                  </Typography>
                 </Card>
               </Grid>
             ))}
           </Grid>
+        </motion.div>
+      </Container>
+
+      <Box sx={{ py: 10, background: "linear-gradient(180deg, rgba(99,102,241,0.03) 0%, transparent 100%)" }}>
+        <Container maxWidth="lg">
+          <motion.div {...fadeInUp}>
+            <Typography variant="h3" align="center" sx={{ mb: 2 }}>
+              How It Works
+            </Typography>
+            <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 8, maxWidth: 500, mx: "auto" }}>
+              Three simple steps to kickstart your internship journey
+            </Typography>
+          </motion.div>
+
+          <motion.div {...stagger}>
+            <Grid container spacing={4}>
+              {steps.map((step, i) => (
+                <Grid item xs={12} md={4} key={step.title}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.15 }}
+                  >
+                    <Card
+                      sx={{
+                        textAlign: "center",
+                        py: 5,
+                        px: 3,
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        position: "relative",
+                        "&:hover": {
+                          transform: "translateY(-6px)",
+                          borderColor: "rgba(99,102,241,0.3)",
+                          boxShadow: "0 20px 60px rgba(99,102,241,0.15)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(236,72,153,0.15) 100%)",
+                          color: "#818CF8",
+                          mb: 3,
+                          border: "1px solid rgba(99,102,241,0.2)",
+                        }}
+                      >
+                        {step.icon}
+                      </Box>
+                      <Typography variant="h5" sx={{ mb: 1.5 }}>
+                        {i + 1}. {step.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                        {step.description}
+                      </Typography>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </motion.div>
         </Container>
       </Box>
 
-      {/* ─── TESTIMONIALS ─── */}
-      <Box sx={{ bgcolor: "#F8FAFC", py: { xs: 8, md: 12 } }}>
-        <Container maxWidth="xl">
-          <Box sx={{ textAlign: "center", mb: 8 }}>
-            <Chip label="Testimonials" size="small" sx={{ bgcolor: "rgba(139,92,246,0.1)", color: "#8B5CF6", fontWeight: 600, mb: 2 }} />
-            <Typography variant="h2" sx={{ fontSize: { xs: "1.75rem", md: "2.5rem" }, mb: 1.5, fontWeight: 800 }}>
-              What Our Users Say
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 520, mx: "auto", fontSize: "1.05rem" }}>
-              Real stories from students and companies who use InternHub.
-            </Typography>
-          </Box>
+      {internships.length > 0 && (
+        <Box sx={{ py: 10 }}>
+          <Container maxWidth="lg">
+            <motion.div {...fadeInUp}>
+              <Typography variant="h3" align="center" sx={{ mb: 2 }}>
+                Featured Internships
+              </Typography>
+              <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, maxWidth: 500, mx: "auto" }}>
+                Explore top internship opportunities from leading companies
+              </Typography>
+            </motion.div>
 
-          <Grid container spacing={3}>
-            {testimonials.map((t) => (
+            <Grid container spacing={3}>
+              {internships.slice(0, 6).map((internship, i) => (
+                <Grid item xs={12} sm={6} md={4} key={internship._id || i}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: i * 0.08 }}
+                  >
+                    <Card
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        p: 2.5,
+                        cursor: "pointer",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          borderColor: "rgba(99,102,241,0.3)",
+                          boxShadow: "0 12px 40px rgba(99,102,241,0.12)",
+                        },
+                      }}
+                      onClick={() => navigate(`/internships/${internship._id}`)}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+                        <Avatar
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            bgcolor: "rgba(99,102,241,0.15)",
+                            color: "#6366F1",
+                            fontWeight: 700,
+                            fontSize: "1rem",
+                          }}
+                        >
+                          {(internship.company?.name || internship.company || "C").charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+                            {internship.title || "Untitled Position"}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {internship.company?.name || internship.companyName || "Company"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flex: 1, lineHeight: 1.6 }}>
+                        {internship.description?.slice(0, 120)}
+                        {(internship.description?.length || 0) > 120 ? "..." : ""}
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {internship.type && (
+                          <Chip label={internship.type} size="small" sx={{ background: "rgba(99,102,241,0.12)", color: "#818CF8" }} />
+                        )}
+                        {internship.location && (
+                          <Chip label={internship.location} size="small" variant="outlined" />
+                        )}
+                      </Box>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+
+            <Box sx={{ textAlign: "center", mt: 5 }}>
+              <Button variant="outlined" size="large" onClick={() => navigate("/internships")} endIcon={<ChevronRight />}>
+                View All Internships
+              </Button>
+            </Box>
+          </Container>
+        </Box>
+      )}
+
+      <Box sx={{ py: 10, background: "linear-gradient(180deg, rgba(236,72,153,0.03) 0%, transparent 100%)" }}>
+        <Container maxWidth="lg">
+          <motion.div {...fadeInUp}>
+            <Typography variant="h3" align="center" sx={{ mb: 2 }}>
+              What People Say
+            </Typography>
+            <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, maxWidth: 500, mx: "auto" }}>
+              Hear from students and companies who use InternHub
+            </Typography>
+          </motion.div>
+
+          <Grid container spacing={4}>
+            {testimonials.map((t, i) => (
               <Grid item xs={12} md={4} key={t.name}>
-                <Card
-                  sx={{
-                    p: 3,
-                    height: "100%",
-                    border: "1px solid #F1F5F9",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.12 }}
                 >
-                  <CardContent sx={{ p: 0, "&:last-child": { pb: 0 }, flex: 1, display: "flex", flexDirection: "column" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2.5 }}>
+                  <Card
+                    sx={{
+                      height: "100%",
+                      p: 3.5,
+                      display: "flex",
+                      flexDirection: "column",
+                      "&:hover": { transform: "translateY(-4px)", borderColor: "rgba(99,102,241,0.25)" },
+                    }}
+                  >
+                    <Box sx={{ display: "flex", gap: 0.5, mb: 2 }}>
+                      {Array.from({ length: t.rating }).map((_, j) => (
+                        <Star key={j} sx={{ fontSize: 18, color: "#F59E0B" }} />
+                      ))}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1, lineHeight: 1.7, mb: 3, fontStyle: "italic" }}>
+                      "{t.text}"
+                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                       <Avatar
                         sx={{
-                          width: 48,
-                          height: 48,
-                          bgcolor: t.color,
+                          width: 40,
+                          height: 40,
+                          background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
                           fontWeight: 700,
-                          fontSize: 16,
+                          fontSize: "0.85rem",
                         }}
                       >
-                        {t.initials}
+                        {t.avatar}
                       </Avatar>
                       <Box>
-                        <Typography variant="subtitle2" fontWeight={700}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                           {t.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -475,87 +421,51 @@ function Home() {
                         </Typography>
                       </Box>
                     </Box>
-                    <Typography
-                      variant="body2"
-                      sx={{ lineHeight: 1.8, color: "#475569", flex: 1, mb: 2.5, fontStyle: "italic" }}
-                    >
-                      &ldquo;{t.text}&rdquo;
-                    </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CheckCircle sx={{ fontSize: 16, color: t.color }} />
-                      <Typography variant="caption" fontWeight={700} sx={{ color: t.color }}>
-                        {t.stat}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
+                  </Card>
+                </motion.div>
               </Grid>
             ))}
           </Grid>
         </Container>
       </Box>
 
-      {/* ─── CTA ─── */}
       <Box
         sx={{
-          background: "linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #312E81 100%)",
-          py: { xs: 8, md: 10 },
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
+          py: 12,
+          background: "linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(236,72,153,0.05) 100%)",
+          borderTop: "1px solid rgba(99,102,241,0.1)",
+          borderBottom: "1px solid rgba(99,102,241,0.1)",
         }}
       >
-        <Box sx={{ position: "absolute", top: "-40%", left: "50%", transform: "translateX(-50%)", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 60%)" }} />
-        <Container maxWidth="md" sx={{ position: "relative", zIndex: 1 }}>
-          <Typography variant="h3" sx={{ color: "#fff", mb: 2, fontWeight: 800, fontSize: { xs: "1.75rem", md: "2.5rem" } }}>
-            Ready to Launch Your Career?
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ color: "rgba(255,255,255,0.65)", mb: 5, fontSize: "1.1rem", maxWidth: 500, mx: "auto" }}
-          >
-            Join thousands of students who have found their dream internships. Start your journey today.
-          </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
-            <Button
-              component={Link}
-              to="/register"
-              variant="contained"
-              size="large"
-              sx={{
-                py: 1.8,
-                px: 5,
-                fontSize: "1rem",
-                bgcolor: "#fff",
-                color: "#4F46E5",
-                fontWeight: 700,
-                "&:hover": { bgcolor: "#F1F5F9", transform: "translateY(-2px)", boxShadow: "0 8px 25px rgba(255,255,255,0.2)" },
-              }}
-            >
-              Get Started Free
-            </Button>
-            <Button
-              component={Link}
-              to="/login"
-              variant="outlined"
-              size="large"
-              sx={{
-                py: 1.8,
-                px: 5,
-                fontSize: "1rem",
-                color: "#fff",
-                borderColor: "rgba(255,255,255,0.25)",
-                fontWeight: 600,
-                "&:hover": { borderColor: "rgba(255,255,255,0.5)", bgcolor: "rgba(255,255,255,0.05)" },
-              }}
-            >
-              Sign In
-            </Button>
-          </Stack>
+        <Container maxWidth="md" sx={{ textAlign: "center" }}>
+          <motion.div {...fadeInUp}>
+            <Typography variant="h3" sx={{ mb: 2 }}>
+              Ready to Start Your Journey?
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 500, mx: "auto" }}>
+              Join thousands of students and companies already using InternHub to connect and grow.
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate("/register")}
+                sx={{ px: 5, py: 1.8, fontSize: "1rem" }}
+              >
+                Join Now - It's Free
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate("/login")}
+                sx={{ px: 5, py: 1.8, fontSize: "1rem" }}
+              >
+                Sign In
+              </Button>
+            </Box>
+          </motion.div>
         </Container>
       </Box>
-    </>
+    </Box>
   );
 }
-
-export default Home;

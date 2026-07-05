@@ -1,8 +1,11 @@
-import { Box, Button, Container, Typography } from "@mui/material";
-import { Home, SearchOff } from "@mui/icons-material";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Box, Typography, Button, Container } from "@mui/material";
+import { Home } from "@mui/icons-material";
 
-function NotFound() {
+export default function NotFound() {
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -10,47 +13,53 @@ function NotFound() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)",
+        background: "linear-gradient(135deg, #0B0F1E 0%, #1A1F35 50%, #0F1529 100%)",
       }}
     >
       <Container maxWidth="sm" sx={{ textAlign: "center" }}>
-        <Box
-          sx={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            bgcolor: "rgba(99,102,241,0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            mx: "auto",
-            mb: 4,
-          }}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <SearchOff sx={{ fontSize: 60, color: "#6366F1" }} />
-        </Box>
-        <Typography variant="h2" fontWeight={800} sx={{ mb: 1 }}>
-          404
-        </Typography>
-        <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>
-          Page Not Found
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 5, maxWidth: 400, mx: "auto" }}>
-          The page you're looking for doesn't exist or has been moved. Let's get you back on track.
-        </Typography>
-        <Button
-          component={Link}
-          to="/"
-          variant="contained"
-          size="large"
-          startIcon={<Home />}
-          sx={{ py: 1.5, px: 4 }}
+          <Typography
+            variant="h1"
+            sx={{
+              fontSize: { xs: "6rem", md: "10rem" },
+              fontWeight: 900,
+              lineHeight: 1,
+              background: "linear-gradient(135deg, #6366F1 0%, #EC4899 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              mb: 2,
+            }}
+          >
+            404
+          </Typography>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
         >
-          Back to Home
-        </Button>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+            Page Not Found
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 5, maxWidth: 400, mx: "auto" }}>
+            The page you're looking for doesn't exist or has been moved.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => navigate("/")}
+            startIcon={<Home />}
+            sx={{ px: 5, py: 1.7, fontSize: "1rem" }}
+          >
+            Go Home
+          </Button>
+        </motion.div>
       </Container>
     </Box>
   );
 }
-
-export default NotFound;

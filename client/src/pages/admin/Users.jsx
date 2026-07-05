@@ -1,148 +1,165 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Typography,
-  Paper,
-  Box,
-  Chip,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TableContainer,
-  Avatar,
-  TextField,
-  InputAdornment,
-  Pagination,
+  Box, Typography, Paper, Table, TableHead, TableRow, TableCell,
+  TableBody, TableContainer, Chip, Avatar, TextField, InputAdornment,
+  Pagination, CircularProgress
 } from "@mui/material";
 import { Search, People } from "@mui/icons-material";
 import AdminLayout from "../../layouts/AdminLayout";
-import Loader from "../../components/common/Loader";
 import API from "../../services/api";
 
-const roleColors = {
-  student: { bg: "#EFF6FF", color: "#3B82F6" },
-  company: { bg: "#ECFDF5", color: "#10B981" },
-  admin: { bg: "#FEF2F2", color: "#EF4444" },
-};
-
-function Users() {
+export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchUsers = async (p = 1) => {
-    try {
-      const res = await API.get(`/admin/users?page=${p}&limit=10`);
-      setUsers(res.data.users || []);
-      setTotalPages(res.data.pages || 1);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
+  const fetchUsers = () => {
+    setLoading(true);
+    API.get("/admin/users", { params: { search, page, limit: 10 } })
+      .then(({ data }) => {
+        setUsers(data.users || []);
+        setTotalPages(data.totalPages || 1);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchUsers(page);
+    fetchUsers();
   }, [page]);
 
-  const filtered = users.filter((u) =>
-    u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
-  if (loading) return <AdminLayout><Loader /></AdminLayout>;
+  const handleSearch = (e) => {
+    setSearch(e.target.value);
+  };
+
+  const roleColors = { student: "#6366F1", company: "#14B8A6", admin: "#EF4444" };
 
   return (
     <AdminLayout>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
+      <Box sx={{ mb: 4, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h4" fontWeight={800}>Users</Typography>
-          <Typography variant="body2" color="text.secondary">Manage all platform users</Typography>
+          <Typography variant="h4" fontWeight={700} sx={{ color: "#F1F5F9", mb: 1 }}>
+            Users
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#64748B" }}>
+            Manage all platform users
+          </Typography>
         </Box>
-          <TextField
-            size="small"
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          InputProps={{
-            startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
+        <TextField
+          placeholder="Search users..."
+          value={search}
+          onChange={handleSearch}
+          size="small"
+          slotProps={{
+            input: {
+              startAdornment: <InputAdornment position="start"><Search sx={{ color: "#64748B" }} /></InputAdornment>,
+            },
           }}
-          sx={{ minWidth: 250 }}
+          sx={{
+            minWidth: 280,
+            "& .MuiOutlinedInput-root": {
+              bgcolor: "#13182B",
+              borderRadius: 3,
+              color: "#F1F5F9",
+              "& fieldset": { borderColor: "rgba(99,102,241,0.2)" },
+              "&:hover fieldset": { borderColor: "rgba(99,102,241,0.4)" },
+              "&.Mui-focused fieldset": { borderColor: "#6366F1" },
+            },
+          }}
         />
       </Box>
 
-      {filtered.length === 0 ? (
-        <Paper sx={{ p: 8, textAlign: "center", border: "1px solid #F1F5F9" }}>
-          <People sx={{ fontSize: 64, color: "#CBD5E1", mb: 2 }} />
-          <Typography variant="h6" color="text.secondary">No users found</Typography>
-        </Paper>
-      ) : (
-        <Paper sx={{ border: "1px solid #F1F5F9", overflow: "hidden" }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><b>User</b></TableCell>
-                  <TableCell><b>Email</b></TableCell>
-                  <TableCell><b>Role</b></TableCell>
-                  <TableCell><b>Joined</b></TableCell>
-                  <TableCell align="right"><b>Actions</b></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filtered.map((user) => (
-                  <TableRow key={user._id} sx={{ "&:hover": { bgcolor: "#F8FAFC" } }}>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: "#6366F1", fontSize: 13, fontWeight: 700 }}>
-                          {user.fullName?.charAt(0) || "U"}
-                        </Avatar>
-                        <Typography variant="body2" fontWeight={600}>{user.fullName}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">{user.email}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.role}
-                        size="small"
-                        sx={{
-                          bgcolor: roleColors[user.role]?.bg || "#F1F5F9",
-                          color: roleColors[user.role]?.color || "#475569",
-                          fontWeight: 700,
-                          fontSize: 11,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(user.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric", month: "short", day: "numeric",
-                        })}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Chip label="Active" size="small" color="success" variant="outlined" />
-                    </TableCell>
+      <Paper sx={{ borderRadius: 4, bgcolor: "#13182B", border: "1px solid rgba(99,102,241,0.1)", overflow: "hidden" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8 }}>
+            <CircularProgress sx={{ color: "#6366F1" }} />
+          </Box>
+        ) : users.length === 0 ? (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <People sx={{ fontSize: 48, color: "#64748B", mb: 2 }} />
+            <Typography variant="h6" sx={{ color: "#94A3B8", mb: 1 }}>No users found</Typography>
+            <Typography variant="body2" sx={{ color: "#64748B" }}>
+              {search ? "Try a different search term" : "No users have registered yet"}
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>User</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Email</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Role</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Joined Date</TableCell>
+                    <TableCell sx={{ color: "#64748B", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Status</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {totalPages > 1 && (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-              <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="secondary" />
-            </Box>
-          )}
-        </Paper>
-      )}
+                </TableHead>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user._id} sx={{ "&:hover": { bgcolor: "rgba(99,102,241,0.05)" } }}>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#F1F5F9" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Avatar sx={{ width: 34, height: 34, bgcolor: "#6366F1", fontSize: 13, fontWeight: 700 }}>
+                            {user.fullName?.charAt(0)}
+                          </Avatar>
+                          <Typography variant="body2" fontWeight={600}>{user.fullName}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>{user.email}</TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                        <Chip
+                          label={user.role}
+                          size="small"
+                          sx={{
+                            textTransform: "capitalize",
+                            fontWeight: 600,
+                            bgcolor: `${roleColors[user.role]}26`,
+                            color: roleColors[user.role],
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)", color: "#94A3B8" }}>
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                        <Chip
+                          label={user.status || "active"}
+                          size="small"
+                          sx={{
+                            textTransform: "capitalize",
+                            fontWeight: 600,
+                            bgcolor: (user.status === "active" || !user.status) ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                            color: (user.status === "active" || !user.status) ? "#22C55E" : "#EF4444",
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {totalPages > 1 && (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, val) => setPage(val)}
+                  sx={{
+                    "& .MuiPaginationItem-root": { color: "#94A3B8", "&.Mui-selected": { bgcolor: "#6366F1", color: "#fff" } },
+                  }}
+                />
+              </Box>
+            )}
+          </>
+        )}
+      </Paper>
     </AdminLayout>
   );
 }
-
-export default Users;
