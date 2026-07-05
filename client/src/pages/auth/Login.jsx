@@ -30,7 +30,7 @@ export default function Login() {
     try {
       const { data } = await API.post("/auth/login", form);
       login(data.token, data.user);
-      toast.success(`Welcome back, ${data.user.name}!`);
+      toast.success(`Welcome back, ${data.user.fullName}!`);
       const role = data.user.role;
       if (role === "student") navigate("/student/dashboard");
       else if (role === "company") navigate("/company/dashboard");

@@ -4,14 +4,14 @@ import { motion } from "framer-motion";
 import {
   Box, Typography, TextField, Button, InputAdornment, IconButton, Paper, ToggleButtonGroup, ToggleButton
 } from "@mui/material";
-import { Mail, Lock, Visibility, VisibilityOff, Person, School, Work } from "@mui/icons-material";
+import { Mail, Lock, Visibility, VisibilityOff, Person, School, Work, Business } from "@mui/icons-material";
 import { toast } from "react-toastify";
 import API from "../../services/api";
 
 export default function Register() {
   const navigate = useNavigate();
   const [role, setRole] = useState("student");
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +21,7 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.password) {
+    if (!form.fullName || !form.email || !form.password) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -136,8 +136,8 @@ export default function Register() {
             <TextField
               fullWidth
               label="Full Name"
-              name="name"
-              value={form.name}
+              name="fullName"
+              value={form.fullName}
               onChange={handleChange}
               sx={{ mb: 2.5 }}
               InputProps={{
