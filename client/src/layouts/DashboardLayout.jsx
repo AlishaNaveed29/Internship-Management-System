@@ -25,6 +25,7 @@ import {
   ChevronLeft,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
+import { DashboardBg } from "../components/common/Illustrations";
 
 const DRAWER_WIDTH = 260;
 
@@ -43,7 +44,8 @@ export default function DashboardLayout({ title, sidebarItems, roleColor }) {
   const drawerWidth = collapsed ? 72 : DRAWER_WIDTH;
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#0B0F1E" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#0B0F1E", position: "relative" }}>
+      <DashboardBg />
       <AppBar
         position="fixed"
         elevation={0}
