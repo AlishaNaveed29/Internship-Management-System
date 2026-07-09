@@ -37,7 +37,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     API.get("/admin/stats")
       .then(({ data }) => {
-        setStats(data);
+        setStats(data.stats || data);
         setRecentUsers(data.recentUsers || []);
       })
       .catch(() => {})

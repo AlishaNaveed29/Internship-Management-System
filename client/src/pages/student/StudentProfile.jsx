@@ -93,7 +93,7 @@ export default function StudentProfile() {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 4, textAlign: "center" }}>
               <Avatar
                 src={profile?.avatar}
@@ -118,7 +118,7 @@ export default function StudentProfile() {
             </Paper>
           </Grid>
 
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Paper sx={{ p: 3 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
                 <Typography variant="h6" fontWeight={700}>
@@ -157,7 +157,7 @@ export default function StudentProfile() {
               </Box>
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Full Name"
@@ -166,7 +166,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Email"
@@ -175,7 +175,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="University"
@@ -184,7 +184,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Degree"
@@ -193,7 +193,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Major"
@@ -202,7 +202,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Graduation Year"
@@ -211,7 +211,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Phone"
@@ -220,7 +220,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Location"
@@ -229,7 +229,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Skills (comma-separated)"
@@ -238,7 +238,7 @@ export default function StudentProfile() {
                     disabled={!editing}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     label="Bio"

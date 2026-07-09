@@ -31,7 +31,6 @@ export default function PostInternship() {
     try {
       const payload = {
         ...form,
-        skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
         positions: Number(form.positions),
         stipend: Number(form.stipend),
       };
@@ -58,7 +57,7 @@ export default function PostInternship() {
         <Paper sx={{ bgcolor: "#13182B", borderRadius: 3, p: 4, border: "1px solid #1E293B" }}>
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   name="title"
@@ -72,7 +71,7 @@ export default function PostInternship() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   name="description"
@@ -88,7 +87,7 @@ export default function PostInternship() {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   name="location"
@@ -102,7 +101,7 @@ export default function PostInternship() {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   select
@@ -121,7 +120,7 @@ export default function PostInternship() {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   select
@@ -140,7 +139,7 @@ export default function PostInternship() {
                 </TextField>
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   name="stipend"
@@ -154,7 +153,7 @@ export default function PostInternship() {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   name="skills"
@@ -168,7 +167,7 @@ export default function PostInternship() {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth
                   name="positions"
@@ -183,7 +182,7 @@ export default function PostInternship() {
                 />
               </Grid>
 
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
                   name="requirements"

@@ -36,7 +36,7 @@ export default function Register() {
       <Box sx={{ position: "absolute", top: "-20%", left: "-10%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
       <Box sx={{ position: "absolute", bottom: "-30%", right: "-5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
       <Grid container sx={{ minHeight: "100vh", position: "relative", zIndex: 1 }}>
-        <Grid item xs={12} md={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 2 }}>
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ width: "100%", maxWidth: 440 }}>
             <Paper sx={{ p: 4.5, background: "linear-gradient(135deg, #13182B 0%, #1A1F35 100%)", border: "1px solid rgba(99,102,241,0.15)" }}>
               <Box sx={{ textAlign: "center", mb: 3 }}>
@@ -73,7 +73,7 @@ export default function Register() {
             </Paper>
           </motion.div>
         </Grid>
-        <Grid item xs={12} md={6} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", justifyContent: "center", p: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", justifyContent: "center", p: 4 }}>
           <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
             <Box sx={{ textAlign: "center" }}>
               <Box sx={{ width: 80, height: 80, borderRadius: 3, display: "inline-flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(236,72,153,0.1))", mb: 4, mx: "auto" }}>

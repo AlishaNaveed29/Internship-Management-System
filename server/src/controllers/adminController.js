@@ -3,7 +3,7 @@ import Company from "../models/Company.js";
 import Internship from "../models/Internship.js";
 import Application from "../models/Application.js";
 
-export const getUsers = async (req, res, next) => {
+export const getUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
     const query = {};
@@ -17,11 +17,11 @@ export const getUsers = async (req, res, next) => {
 
     res.json({ users, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch users" });
   }
 };
 
-export const getCompanies = async (req, res, next) => {
+export const getCompanies = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
     const query = {};
@@ -35,11 +35,11 @@ export const getCompanies = async (req, res, next) => {
 
     res.json({ companies, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch companies" });
   }
 };
 
-export const getInternships = async (req, res, next) => {
+export const getInternships = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
     const query = {};
@@ -54,11 +54,11 @@ export const getInternships = async (req, res, next) => {
 
     res.json({ internships, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch internships" });
   }
 };
 
-export const getApplications = async (req, res, next) => {
+export const getApplications = async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
     const query = {};
@@ -74,11 +74,11 @@ export const getApplications = async (req, res, next) => {
 
     res.json({ applications, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch applications" });
   }
 };
 
-export const getStats = async (req, res, next) => {
+export const getStats = async (req, res) => {
   try {
     const [totalUsers, totalCompanies, totalInternships, totalApplications] = await Promise.all([
       User.countDocuments(),
@@ -94,6 +94,6 @@ export const getStats = async (req, res, next) => {
       recentUsers,
     });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch stats" });
   }
 };

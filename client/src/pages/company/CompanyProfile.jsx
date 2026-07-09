@@ -93,7 +93,7 @@ export default function CompanyProfile() {
 
         <Paper sx={{ bgcolor: "#13182B", borderRadius: 3, p: 4, border: "1px solid #1E293B" }}>
           <Grid container spacing={4}>
-            <Grid item xs={12} md={4} display="flex" flexDirection="column" alignItems="center">
+            <Grid size={{ xs: 12, md: 4 }} display="flex" flexDirection="column" alignItems="center">
               <Avatar sx={{ width: 120, height: 120, bgcolor: "#6366F1", fontSize: 48, mb: 2 }}>
                 {profile.companyName?.charAt(0)?.toUpperCase() || "C"}
               </Avatar>
@@ -118,10 +118,10 @@ export default function CompanyProfile() {
               )}
             </Grid>
 
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Grid container spacing={2}>
                 {fields.map((field) => (
-                  <Grid item xs={12} md={field.md} key={field.name}>
+                  <Grid size={{ xs: 12, md: field.md }} key={field.name}>
                     <TextField
                       fullWidth
                       name={field.name}
@@ -144,7 +144,7 @@ export default function CompanyProfile() {
                     />
                   </Grid>
                 ))}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     fullWidth
                     name="description"

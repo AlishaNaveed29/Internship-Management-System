@@ -1,6 +1,6 @@
 import Company from "../models/Company.js";
 
-export const getProfile = async (req, res, next) => {
+export const getProfile = async (req, res) => {
   try {
     let company = await Company.findOne({ userId: req.user._id });
     if (!company) {
@@ -8,11 +8,11 @@ export const getProfile = async (req, res, next) => {
     }
     res.json({ company });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to get profile" });
   }
 };
 
-export const updateProfile = async (req, res, next) => {
+export const updateProfile = async (req, res) => {
   try {
     const allowed = ["companyName", "email", "industry", "location", "website", "phone", "description", "size"];
     const updates = {};
@@ -23,6 +23,6 @@ export const updateProfile = async (req, res, next) => {
     let company = await Company.findOneAndUpdate({ userId: req.user._id }, updates, { new: true, upsert: true });
     res.json({ company });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to update profile" });
   }
 };

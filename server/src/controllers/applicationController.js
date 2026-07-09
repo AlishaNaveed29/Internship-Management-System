@@ -3,7 +3,7 @@ import Internship from "../models/Internship.js";
 import Student from "../models/Student.js";
 import Company from "../models/Company.js";
 
-export const apply = async (req, res, next) => {
+export const apply = async (req, res) => {
   try {
     const internship = await Internship.findById(req.params.id);
     if (!internship) return res.status(404).json({ message: "Internship not found" });
@@ -19,11 +19,11 @@ export const apply = async (req, res, next) => {
     const application = await Application.create({ student: student._id, internship: internship._id });
     res.status(201).json({ application });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Application failed" });
   }
 };
 
-export const getMyApplications = async (req, res, next) => {
+export const getMyApplications = async (req, res) => {
   try {
     const student = await Student.findOne({ userId: req.user._id });
     if (!student) return res.json({ applications: [], total: 0, page: 1, pages: 0 });
@@ -40,13 +40,13 @@ export const getMyApplications = async (req, res, next) => {
 
     res.json({ applications, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch applications" });
   }
 };
 
-export const getCompanyApplications = async (req, res, next) => {
+export const getCompanyApplications = async (req, res) => {
   try {
-    const company = await require("../models/Company.js").default.findOne({ userId: req.user._id });
+    const company = await Company.findOne({ userId: req.user._id });
     if (!company) return res.status(404).json({ message: "Company profile not found" });
 
     const internships = await Internship.find({ company: company._id }).select("_id");
@@ -65,11 +65,11 @@ export const getCompanyApplications = async (req, res, next) => {
 
     res.json({ applications, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch applications" });
   }
 };
 
-export const updateStatus = async (req, res, next) => {
+export const updateStatus = async (req, res) => {
   try {
     const company = await Company.findOne({ userId: req.user._id });
 
@@ -84,6 +84,6 @@ export const updateStatus = async (req, res, next) => {
     await application.save();
     res.json({ application });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to update status" });
   }
 };

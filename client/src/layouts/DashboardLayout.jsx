@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
   Drawer,
@@ -20,16 +20,15 @@ import {
 import {
   Menu as MenuIcon,
   Logout,
-  Dashboard,
-  Work,
   ChevronLeft,
+  Work,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { DashboardBg } from "../components/common/Illustrations";
 
 const DRAWER_WIDTH = 260;
 
-export default function DashboardLayout({ title, sidebarItems, roleColor }) {
+export default function DashboardLayout({ children, title, sidebarItems, roleColor }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -152,7 +151,7 @@ export default function DashboardLayout({ title, sidebarItems, roleColor }) {
           overflow: "auto",
         }}
       >
-        <Outlet />
+        {children}
       </Box>
     </Box>
   );

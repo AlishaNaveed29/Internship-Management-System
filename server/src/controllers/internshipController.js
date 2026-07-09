@@ -2,7 +2,7 @@ import Internship from "../models/Internship.js";
 import Company from "../models/Company.js";
 import Application from "../models/Application.js";
 
-export const getInternships = async (req, res, next) => {
+export const getInternships = async (req, res) => {
   try {
     const { page = 1, limit = 12, search, location, duration, type } = req.query;
     const query = { status: "active" };
@@ -21,11 +21,11 @@ export const getInternships = async (req, res, next) => {
 
     res.json({ internships, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch internships" });
   }
 };
 
-export const getMyInternships = async (req, res, next) => {
+export const getMyInternships = async (req, res) => {
   try {
     const company = await Company.findOne({ userId: req.user._id });
     if (!company) return res.status(404).json({ message: "Company profile not found" });
@@ -49,22 +49,26 @@ export const getMyInternships = async (req, res, next) => {
 
     res.json({ internships: withCounts, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch my internships" });
   }
 };
 
-export const getInternship = async (req, res, next) => {
+export const getInternship = async (req, res) => {
   try {
     const internship = await Internship.findById(req.params.id).populate("company");
     if (!internship) return res.status(404).json({ message: "Internship not found" });
     res.json({ internship });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to fetch internship" });
   }
 };
 
-export const createInternship = async (req, res, next) => {
+export const createInternship = async (req, res) => {
   try {
+    const { title, description } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ message: "Title is required" });
+    if (!description || !description.trim()) return res.status(400).json({ message: "Description is required" });
+
     const company = await Company.findOne({ userId: req.user._id });
     if (!company) return res.status(404).json({ message: "Create company profile first" });
 
@@ -78,11 +82,11 @@ export const createInternship = async (req, res, next) => {
     const internship = await Internship.create(data);
     res.status(201).json({ internship });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to create internship" });
   }
 };
 
-export const updateInternship = async (req, res, next) => {
+export const updateInternship = async (req, res) => {
   try {
     const company = await Company.findOne({ userId: req.user._id });
     const internship = await Internship.findOne({ _id: req.params.id, company: company._id });
@@ -96,11 +100,11 @@ export const updateInternship = async (req, res, next) => {
 
     res.json({ internship });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to update internship" });
   }
 };
 
-export const deleteInternship = async (req, res, next) => {
+export const deleteInternship = async (req, res) => {
   try {
     const company = await Company.findOne({ userId: req.user._id });
     const internship = await Internship.findOneAndDelete({ _id: req.params.id, company: company._id });
@@ -109,6 +113,6 @@ export const deleteInternship = async (req, res, next) => {
     await Application.deleteMany({ internship: internship._id });
     res.json({ message: "Internship deleted" });
   } catch (err) {
-    next(err);
+    res.status(500).json({ message: err.message || "Failed to delete internship" });
   }
 };

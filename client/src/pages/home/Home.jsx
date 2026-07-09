@@ -103,7 +103,7 @@ export default function Home() {
       >
         <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
           <Grid container spacing={4} alignItems="center">
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <motion.div initial={{ opacity: 0, x: -60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                 <Chip label="Connecting Talent with Opportunity" sx={{ mb: 3, background: "rgba(99,102,241,0.15)", color: "#818CF8", fontWeight: 600, px: 2, py: 2.5, fontSize: "0.9rem", border: "1px solid rgba(99,102,241,0.2)" }} />
                 <Typography variant="h1" sx={{ fontSize: { xs: "2.5rem", md: "4rem" }, fontWeight: 800, lineHeight: 1.1, mb: 2, background: "linear-gradient(135deg, #F1F5F9 0%, #818CF8 50%, #EC4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
@@ -118,7 +118,7 @@ export default function Home() {
                 </Box>
               </motion.div>
             </Grid>
-            <Grid item xs={12} md={6} sx={{ display: { xs: "none", md: "block" } }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: { xs: "none", md: "block" } }}>
               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
                 <HeroIllustration />
               </motion.div>
@@ -135,7 +135,7 @@ export default function Home() {
               { label: "Companies", value: counts[1], suffix: "+", icon: <Business sx={{ fontSize: 32 }} />, gradient: "linear-gradient(135deg, #14B8A6, #2DD4BF)" },
               { label: "Internships", value: counts[2], suffix: "+", icon: <Work sx={{ fontSize: 32 }} />, gradient: "linear-gradient(135deg, #EC4899, #F472B6)" },
             ].map((stat) => (
-              <Grid item xs={12} sm={4} key={stat.label}>
+              <Grid size={{ xs: 12, sm: 4 }} key={stat.label}>
                 <Card sx={{ textAlign: "center", py: 4, px: 3, position: "relative", overflow: "hidden", background: "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(236,72,153,0.05) 100%)", border: "1px solid rgba(99,102,241,0.15)", "&:hover": { transform: "translateY(-6px)", borderColor: "rgba(99,102,241,0.3)", boxShadow: "0 20px 60px rgba(99,102,241,0.15)" } }}>
                   <Box sx={{ width: 60, height: 60, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: `${stat.gradient}20`, mx: "auto", mb: 2 }}>
                     <Box sx={{ color: stat.label === "Students" ? "#818CF8" : stat.label === "Companies" ? "#2DD4BF" : "#F472B6" }}>{stat.icon}</Box>
@@ -158,7 +158,7 @@ export default function Home() {
           <motion.div {...stagger}>
             <Grid container spacing={4}>
               {steps.map((step, i) => (
-                <Grid item xs={12} md={4} key={step.title}>
+                <Grid size={{ xs: 12, md: 4 }} key={step.title}>
                   <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.15 }}>
                     <Card sx={{ textAlign: "center", py: 5, px: 3, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", position: "relative", overflow: "visible", "&:hover": { transform: "translateY(-6px)", borderColor: "rgba(99,102,241,0.3)", boxShadow: "0 20px 60px rgba(99,102,241,0.15)" } }}>
                       <Box sx={{ position: "absolute", top: -20, width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #6366F1, #8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: "1.1rem", boxShadow: "0 4px 15px rgba(99,102,241,0.4)" }}>{i + 1}</Box>
@@ -184,7 +184,7 @@ export default function Home() {
           </motion.div>
           <Grid container spacing={3}>
             {features.map((f, i) => (
-              <Grid item xs={12} md={4} key={f.title}>
+              <Grid size={{ xs: 12, md: 4 }} key={f.title}>
                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.12 }}>
                   <Card sx={{ p: 3.5, height: "100%", "&:hover": { transform: "translateY(-4px)", borderColor: "rgba(99,102,241,0.25)" } }}>
                     <Box sx={{ width: 48, height: 48, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", background: `${f.color}20`, color: f.color, mb: 2 }}>{f.icon}</Box>
@@ -207,7 +207,7 @@ export default function Home() {
             </motion.div>
             <Grid container spacing={3}>
               {internships.slice(0, 6).map((item, i) => (
-                <Grid item xs={12} sm={6} md={4} key={item._id || i}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item._id || i}>
                   <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.08 }}>
                     <Card sx={{ height: "100%", display: "flex", flexDirection: "column", p: 2.5, cursor: "pointer", "&:hover": { transform: "translateY(-4px)", borderColor: "rgba(99,102,241,0.3)", boxShadow: "0 12px 40px rgba(99,102,241,0.12)" } }} onClick={() => navigate("/register")}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
@@ -246,7 +246,7 @@ export default function Home() {
           </motion.div>
           <Grid container spacing={4}>
             {testimonials.map((t, i) => (
-              <Grid item xs={12} md={4} key={t.name}>
+              <Grid size={{ xs: 12, md: 4 }} key={t.name}>
                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.12 }}>
                   <Card sx={{ height: "100%", p: 3.5, display: "flex", flexDirection: "column", "&:hover": { transform: "translateY(-4px)", borderColor: "rgba(99,102,241,0.25)" } }}>
                     <Box sx={{ display: "flex", gap: 0.3, mb: 2 }}>
